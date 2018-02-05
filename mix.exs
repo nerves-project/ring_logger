@@ -5,7 +5,7 @@ defmodule Logger.RemoteConsole.MixProject do
     [
       app: :logger_remote_console,
       version: "0.1.0",
-      elixir: "~> 1.6",
+      elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env)
     ]
