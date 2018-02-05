@@ -89,7 +89,7 @@ iex(node2@127.0.0.1)> buffer = Logger.RemoteConsole.get_buffer
    ]}
 ]
 iex(node1@127.0.0.1)> Enum.map(buffer, & Logger.RemoteConsole.Client.format_message(&1, client.config))
-["\e[36m\n17:51:56.680 [debug] 92\n\e[0m",
- "\e[36m\n17:51:57.681 [debug] 93\n\e[0m",
- "\e[36m\n17:51:58.682 [debug] 94\n\e[0m"]
+["\e[36m\n17:51:56.680 [debug] 8\n\e[0m",
+ "\e[36m\n17:51:57.681 [debug] 9\n\e[0m",
+ "\e[36m\n17:51:58.682 [debug] 10\n\e[0m"]
 ```
