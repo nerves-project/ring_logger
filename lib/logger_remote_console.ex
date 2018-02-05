@@ -17,11 +17,17 @@ defmodule Logger.RemoteConsole do
   end
 
   def init({__MODULE__, opts}) when is_list(opts) do
+    env = Application.get_env :logger, __MODULE__, []
+    opts = Keyword.merge env, opts
+    Application.put_env :logger, __MODULE__, opts
     Server.start_link(opts)
     {:ok, configure(opts)}
   end
 
   def handle_call({:configure, opts}, _state) do
+    env = Application.get_env :logger, __MODULE__, []
+    opts = Keyword.merge env, opts
+    Application.put_env :logger, __MODULE__, opts
     {:ok, :ok, configure(opts)}
   end
 
