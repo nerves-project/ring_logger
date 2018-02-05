@@ -13,7 +13,7 @@ defmodule Logger.RemoteConsole.TestIO do
     {:ok, callback}
   end
 
-  def handle_info({:io_request, from, reply_as, {:put_chars, _encoding, chars}} = data, callback) do
+  def handle_info({:io_request, from, reply_as, {:put_chars, _encoding, chars}}, callback) do
     send(callback, {:io, chars})
     reply(from, reply_as, :ok)
     {:noreply, callback}

@@ -45,25 +45,17 @@ defmodule Logger.RemoteConsole.Server do
   end
 
   def init(opts) do
-    buffer_size = opts[:buffer_size] || @buffer_size
-
-    {:ok, %State{
+    state = 
+      %State{
       clients: [],
       buffer: :queue.new(),
-      buffer_size: buffer_size
-    }}
+        buffer_size: @buffer_size
+      }
+    {:ok, merge_opts(opts, state)}
   end
 
   def handle_call({:configure, opts}, _from, state) do
-    opts = 
-      opts
-      |> Keyword.take(@opts)
-      |> Enum.into(%{})
-    state = 
-      state
-      |> Map.merge(opts)
-      |> trim_buffer
-    {:reply, opts, state}
+    {:reply, :ok, merge_opts(opts, state)}
   end
 
   def handle_call({:attach, pid, task, config}, _from, state) do
@@ -124,7 +116,7 @@ defmodule Logger.RemoteConsole.Server do
   defp demonitor(%{monitor_ref: ref}), do: Process.demonitor(ref)
 
   defp trim_buffer(%{buffer_size: size, buffer_actual_size: actual, buffer: buffer} = state) 
-    when size >= actual do
+    when actual >= size do
     trim = actual - size
     buffer = 
       Enum.reduce(1..trim, buffer, fn(_, buffer) ->  
@@ -135,5 +127,16 @@ defmodule Logger.RemoteConsole.Server do
   end
 
   defp trim_buffer(state), do: state
+
+  defp merge_opts(opts, state) do
+    opts = 
+      opts
+      |> Keyword.take(@opts)
+      |> Enum.into(%{})
+
+    state
+    |> Map.merge(opts)
+    |> trim_buffer
+  end
 
 end
