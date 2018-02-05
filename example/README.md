@@ -54,7 +54,8 @@ iex(node2@127.0.0.1)> Logger.RemoteConsole.get_buffer
 ]
 ```
 
-Reconstitute the buffer
+The buffer is stored as unformatted messages and formatting is applies to the
+connected clients. You can apply formatting to the buffer afterwards like this:
 ```elixir
 iex(node1@127.0.0.1)> {:ok, client} = Logger.RemoteConsole.attach
 # ...
