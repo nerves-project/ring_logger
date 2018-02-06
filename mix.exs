@@ -7,7 +7,11 @@ defmodule Logger.CircularBuffer.MixProject do
       version: "0.1.0",
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
-      elixirc_paths: elixirc_paths(Mix.env())
+      description: description(),
+      package: package(),
+      docs: docs(),
+      elixirc_paths: elixirc_paths(Mix.env()),
+      deps: deps()
     ]
   end
 
@@ -18,5 +22,26 @@ defmodule Logger.CircularBuffer.MixProject do
     [
       extra_applications: [:logger]
     ]
+  end
+
+  defp docs do
+    [extras: ["README.md"],
+     main: "readme"]
+  end
+
+  defp deps do
+    [{:ex_doc, "~> 0.15", only: :dev}]
+  end
+
+  defp description do
+    """
+    A circular buffer backend for Elixir Logger with support for IO streaming.
+    """
+  end
+
+  defp package do
+    [maintainers: ["Justin Schneck"],
+     licenses: ["Apache 2.0"],
+     links: %{"Github" => "https://github.com/nerves-project/logger_circular_buffer"}]
   end
 end
