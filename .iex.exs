@@ -1,1 +1,1 @@
-alias Logger.RemoteConsole.Server, as: S
+alias Logger.CircularBuffer.Server, as: S

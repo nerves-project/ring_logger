@@ -1,19 +1,19 @@
-defmodule Logger.RemoteConsoleTest do
+defmodule Logger.CircularBufferTest do
   use ExUnit.Case
-  doctest Logger.RemoteConsole
+  doctest Logger.CircularBuffer
 
   import ExUnit.CaptureIO
-  alias Logger.RemoteConsole.{Server, Client}
+  alias Logger.CircularBuffer.{Server, Client}
   require Logger
 
   setup do
-    {:ok, pid} = Logger.RemoteConsole.TestIO.start(self())
+    {:ok, pid} = Logger.CircularBuffer.TestIO.start(self())
     Logger.remove_backend(:console)
-    Logger.add_backend(Logger.RemoteConsole)
-    Logger.configure_backend(Logger.RemoteConsole, buffer_size: 10)
+    Logger.add_backend(Logger.CircularBuffer)
+    Logger.configure_backend(Logger.CircularBuffer, buffer_size: 10)
 
     on_exit(fn ->
-      Logger.RemoteConsole.TestIO.stop(pid)
+      Logger.CircularBuffer.TestIO.stop(pid)
     end)
 
     {:ok, [io: pid]}
@@ -84,7 +84,7 @@ defmodule Logger.RemoteConsoleTest do
   end
 
   test "buffer does not exceed size", %{io: io} do
-    Logger.configure_backend(Logger.RemoteConsole, buffer_size: 2)
+    Logger.configure_backend(Logger.CircularBuffer, buffer_size: 2)
     Server.attach(io: io)
     Server.flush_buffer()
 

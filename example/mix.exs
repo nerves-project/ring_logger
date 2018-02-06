@@ -22,7 +22,7 @@ defmodule Example.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:logger_remote_console, path: "../"}
+      {:logger_circular_buffer, path: "../"}
     ]
   end
 end

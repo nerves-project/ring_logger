@@ -1,7 +1,7 @@
-defmodule Logger.RemoteConsole.Server do
+defmodule Logger.CircularBuffer.Server do
   use GenServer
 
-  alias Logger.RemoteConsole.Client
+  alias Logger.CircularBuffer.Client
 
   @buffer_size 100
   @opts [:buffer_size]

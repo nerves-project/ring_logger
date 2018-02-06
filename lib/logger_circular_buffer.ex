@@ -1,7 +1,7 @@
-defmodule Logger.RemoteConsole do
+defmodule Logger.CircularBuffer do
   @behaviour :gen_event
 
-  alias Logger.RemoteConsole.Server
+  alias Logger.CircularBuffer.Server
 
   defdelegate attach(opts \\ []), to: Server
   defdelegate detach(), to: Server

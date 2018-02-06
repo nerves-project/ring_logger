@@ -1,4 +1,4 @@
-defmodule Logger.RemoteConsole.Client do
+defmodule Logger.CircularBuffer.Client do
   defstruct pid: nil,
             task: nil,
             monitor_ref: nil,

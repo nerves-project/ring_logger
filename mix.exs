@@ -1,9 +1,9 @@
-defmodule Logger.RemoteConsole.MixProject do
+defmodule Logger.CircularBuffer.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :logger_remote_console,
+      app: :logger_circular_buffer,
       version: "0.1.0",
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
