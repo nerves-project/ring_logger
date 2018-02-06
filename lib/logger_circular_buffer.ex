@@ -32,7 +32,6 @@ defmodule Logger.CircularBuffer do
   end
 
   def handle_event(:flush, state) do
-    Server.flush_buffer()
     {:ok, state}
   end
 

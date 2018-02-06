@@ -34,10 +34,6 @@ defmodule Logger.CircularBuffer.Server do
     GenServer.call(__MODULE__, :get_buffer)
   end
 
-  def flush_buffer() do
-    GenServer.cast(__MODULE__, :flush)
-  end
-
   def log(msg) do
     GenServer.cast(__MODULE__, {:log, msg})
   end
@@ -72,10 +68,6 @@ defmodule Logger.CircularBuffer.Server do
   def handle_cast({:log, msg}, state) do
     Enum.each(state.clients, &send(&1.task, {:log, msg, &1.config}))
     {:noreply, buffer_message(msg, state)}
-  end
-
-  def handle_cast(:flush, state) do
-    {:noreply, %{state | buffer: :queue.new(), buffer_actual_size: 0}}
   end
 
   def handle_info({:DOWN, _ref, _, pid, _reason}, state) do
