@@ -2,7 +2,7 @@ defmodule Example do
   require Logger
 
   def start(_type, _args) do
-    spawn fn -> log(0) end
+    spawn(fn -> log(0) end)
     {:ok, self()}
   end
 
