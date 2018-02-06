@@ -1,10 +1,10 @@
-defmodule Logger.CircularBuffer.MixProject do
+defmodule LoggerCircularBuffer.MixProject do
   use Mix.Project
 
   def project do
     [
       app: :logger_circular_buffer,
-      version: "0.1.0",
+      version: "0.2.0",
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
       description: description(),

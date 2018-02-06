@@ -1,4 +1,4 @@
-defmodule Logger.CircularBuffer.TestIO do
+defmodule LoggerCircularBuffer.TestIO do
   use GenServer
 
   def start(callback) do

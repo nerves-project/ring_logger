@@ -1,4 +1,4 @@
-defmodule Logger.CircularBuffer.Config do
+defmodule LoggerCircularBuffer.Config do
   defstruct colors: nil,
             metadata: nil,
             format: nil,

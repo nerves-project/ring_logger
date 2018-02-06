@@ -1,20 +1,20 @@
-defmodule Logger.CircularBufferTest do
+defmodule LoggerCircularBufferTest do
   use ExUnit.Case, async: false
-  doctest Logger.CircularBuffer
+  doctest LoggerCircularBuffer
 
   import ExUnit.CaptureIO
-  alias Logger.CircularBuffer.{Server, Client}
+  alias LoggerCircularBuffer.{Server, Client}
   require Logger
 
   setup do
-    {:ok, pid} = Logger.CircularBuffer.TestIO.start(self())
+    {:ok, pid} = LoggerCircularBuffer.TestIO.start(self())
     Logger.remove_backend(:console)
-    Logger.add_backend(Logger.CircularBuffer)
-    Logger.configure_backend(Logger.CircularBuffer, buffer_size: 10)
+    Logger.add_backend(LoggerCircularBuffer)
+    Logger.configure_backend(LoggerCircularBuffer, buffer_size: 10)
 
     on_exit(fn ->
-      Logger.CircularBuffer.TestIO.stop(pid)
-      Logger.remove_backend(Logger.CircularBuffer)
+      LoggerCircularBuffer.TestIO.stop(pid)
+      Logger.remove_backend(LoggerCircularBuffer)
 
       Process.whereis(Server)
       |> Process.exit(:kill)
@@ -78,7 +78,7 @@ defmodule Logger.CircularBufferTest do
   end
 
   test "buffer does not exceed size", %{io: io} do
-    Logger.configure_backend(Logger.CircularBuffer, buffer_size: 2)
+    Logger.configure_backend(LoggerCircularBuffer, buffer_size: 2)
     Server.attach(io: io)
 
     Logger.debug("Foo")
@@ -98,7 +98,7 @@ defmodule Logger.CircularBufferTest do
   end
 
   test "buffer can be fetched by range", %{io: io} do
-    Logger.configure_backend(Logger.CircularBuffer, buffer_size: 3)
+    Logger.configure_backend(LoggerCircularBuffer, buffer_size: 3)
     Server.attach(io: io)
     Logger.debug("Foo")
     assert_receive {:io, _message}
@@ -113,7 +113,7 @@ defmodule Logger.CircularBufferTest do
   end
 
   test "buffer start index is less then buffer_start_index", %{io: io} do
-    Logger.configure_backend(Logger.CircularBuffer, buffer_size: 1)
+    Logger.configure_backend(LoggerCircularBuffer, buffer_size: 1)
     Server.attach(io: io)
     Logger.debug("Foo")
     assert_receive {:io, _message}

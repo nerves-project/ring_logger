@@ -1,7 +1,7 @@
-defmodule Logger.CircularBuffer.Server do
+defmodule LoggerCircularBuffer.Server do
   use GenServer
 
-  alias Logger.CircularBuffer.Client
+  alias LoggerCircularBuffer.Client
 
   @buffer_size 100
   @opts [:buffer_size]

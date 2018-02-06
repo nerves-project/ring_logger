@@ -1,4 +1,4 @@
-# Logger.CircularBuffer
+# LoggerCircularBuffer
 A circular buffer backend for Elixir Logger with support for IO streaming.
 
 [![CircleCI](https://circleci.com/gh/nerves-project/logger_circular_buffer.svg?style=svg)](https://circleci.com/gh/nerves-project/logger_circular_buffer)
@@ -11,22 +11,22 @@ Configuring via Application config
 # config/config.exs
 use Mix.Config
 
-config :logger, backends: [Logger.CircularBuffer]
+config :logger, backends: [LoggerCircularBuffer]
 
-config :logger, Logger.CircularBuffer, buffer_size: 100
+config :logger, LoggerCircularBuffer, buffer_size: 100
 ```
 
 Startng Manually
 ```elixir
-Logger.add_backend(Logger.CircularBuffer)
-Logger.configure(Logger.CircularBuffer, buffer_size: 100)
+Logger.add_backend(LoggerCircularBuffer)
+Logger.configure(LoggerCircularBuffer, buffer_size: 100)
 ```
 
 ## Usage
 
 Get the remote console buffer
 ```elixir
-iex(node2@127.0.0.1)> Logger.CircularBuffer.get
+iex(node2@127.0.0.1)> LoggerCircularBuffer.get
 [
   debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
    [
@@ -62,7 +62,7 @@ The buffer is stored as unformatted messages and formatting is applies to the
 connected clients. You can apply formatting to the buffer afterwards like this:
 ```elixir
 iex> config = Logger,CircularBuffer.Config.init(colors: [enabled: false])
-%Logger.CircularBuffer.Config{
+%LoggerCircularBuffer.Config{
   colors: %{
     debug: :cyan,
     enabled: true,
@@ -75,7 +75,7 @@ iex> config = Logger,CircularBuffer.Config.init(colors: [enabled: false])
   io: :stdio,
   metadata: []
 }
-iex> {:ok, buffer} = Logger.CircularBuffer.get
+iex> {:ok, buffer} = LoggerCircularBuffer.get
 [
   debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
    [
@@ -108,7 +108,7 @@ iex> {:ok, buffer} = Logger.CircularBuffer.get
      line: 11
    ]}
 ]
-iex> Enum.map(buffer, & Logger.CircularBuffer.Client.format_message(&1, config)) |> Enum.map(&IO.iodata_to_binary/1)
+iex> Enum.map(buffer, & LoggerCircularBuffer.Client.format_message(&1, config)) |> Enum.map(&IO.iodata_to_binary/1)
 ["\n17:51:56.680 [debug] 8\n",
  "\n17:51:57.681 [debug] 9\n",
  "\n17:51:58.682 [debug] 10\n"]
@@ -116,10 +116,10 @@ iex> Enum.map(buffer, & Logger.CircularBuffer.Client.format_message(&1, config))
 
 Attaching IO to the circular buffer
 ```elixir
-iex(node2@127.0.0.1)> Logger.CircularBuffer.attach
+iex(node2@127.0.0.1)> LoggerCircularBuffer.attach
 ```
 
 Detaching IO from the circular buffer
 ```elixir
-iex(node2@127.0.0.1)> Logger.CircularBuffer.detach
+iex(node2@127.0.0.1)> LoggerCircularBuffer.detach
 ```

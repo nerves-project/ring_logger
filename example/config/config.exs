@@ -2,6 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :logger, backends: [Logger.CircularBuffer]
+config :logger, backends: [LoggerCircularBuffer]
 
-config :logger, Logger.CircularBuffer, buffer_size: 3
+config :logger, LoggerCircularBuffer, buffer_size: 3

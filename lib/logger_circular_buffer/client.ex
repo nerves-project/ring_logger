@@ -1,5 +1,5 @@
-defmodule Logger.CircularBuffer.Client do
-  alias Logger.CircularBuffer.Config
+defmodule LoggerCircularBuffer.Client do
+  alias LoggerCircularBuffer.Config
 
   defstruct pid: nil,
             task: nil,

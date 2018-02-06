@@ -1,7 +1,7 @@
-defmodule Logger.CircularBuffer do
+defmodule LoggerCircularBuffer do
   @behaviour :gen_event
 
-  alias Logger.CircularBuffer.{Server, Client}
+  alias LoggerCircularBuffer.{Server, Client}
 
   defdelegate attach(opts \\ []), to: Server
   defdelegate detach(), to: Server
