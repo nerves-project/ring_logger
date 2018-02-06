@@ -33,8 +33,8 @@ defmodule Logger.CircularBuffer.Server do
     GenServer.call(__MODULE__, {:detach, self()})
   end
 
-  def get_buffer(start_index \\ 0) do
-    GenServer.call(__MODULE__, {:get_buffer, start_index})
+  def get(start_index \\ 0) do
+    GenServer.call(__MODULE__, {:get, start_index})
   end
 
   def log(msg) do
@@ -64,7 +64,7 @@ defmodule Logger.CircularBuffer.Server do
     {:reply, :ok, detach_client(pid, state)}
   end
 
-  def handle_call({:get_buffer, start_index}, _from, state) do
+  def handle_call({:get, start_index}, _from, state) do
     resp = 
       cond do
         start_index <= state.buffer_start_index ->

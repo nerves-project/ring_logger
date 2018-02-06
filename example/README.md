@@ -22,7 +22,7 @@ iex(node2@127.0.0.1)> Logger.CircularBuffer.detach
 
 Get the remote console buffer
 ```elixir
-iex(node2@127.0.0.1)> Logger.CircularBuffer.get_buffer
+iex(node2@127.0.0.1)> Logger.CircularBuffer.get
 [
   debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
    [
@@ -59,7 +59,7 @@ connected clients. You can apply formatting to the buffer afterwards like this:
 ```elixir
 iex(node1@127.0.0.1)> {:ok, client} = Logger.CircularBuffer.attach
 # ...
-iex(node2@127.0.0.1)> buffer = Logger.CircularBuffer.get_buffer
+iex(node2@127.0.0.1)> buffer = Logger.CircularBuffer.get
 [
   debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
    [

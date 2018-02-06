@@ -1,7 +1,7 @@
 # Logger.CircularBuffer
 A circular buffer backend for Elixir Logger with support for IO streaming.
 
-[![CircleCI](https://circleci.com/gh/mobileoverlord/logger_circular_buffer.svg?style=svg)](https://circleci.com/gh/mobileoverlord/logger_circular_buffer)
+[![CircleCI](https://circleci.com/gh/nerves-project/logger_circular_buffer.svg?style=svg)](https://circleci.com/gh/nerves-project/logger_circular_buffer)
 [![Hex version](https://img.shields.io/hexpm/v/logger_circular_buffer.svg "Hex version")](https://hex.pm/packages/logger_circular_buffer)
 
 ## Configuration
@@ -26,7 +26,7 @@ Logger.configure(Logger.CircularBuffer, buffer_size: 100)
 
 Get the remote console buffer
 ```elixir
-iex(node2@127.0.0.1)> Logger.CircularBuffer.get_buffer
+iex(node2@127.0.0.1)> Logger.CircularBuffer.get
 [
   debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
    [
@@ -75,7 +75,7 @@ iex> config = Logger,CircularBuffer.Config.init(colors: [enabled: false])
   io: :stdio,
   metadata: []
 }
-iex> {:ok, buffer} = Logger.CircularBuffer.get_buffer
+iex> {:ok, buffer} = Logger.CircularBuffer.get
 [
   debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
    [
