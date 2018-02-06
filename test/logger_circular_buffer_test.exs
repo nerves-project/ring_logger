@@ -1,5 +1,5 @@
 defmodule Logger.CircularBufferTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   doctest Logger.CircularBuffer
 
   import ExUnit.CaptureIO
@@ -14,6 +14,9 @@ defmodule Logger.CircularBufferTest do
 
     on_exit(fn ->
       Logger.CircularBuffer.TestIO.stop(pid)
+      Logger.remove_backend(Logger.CircularBuffer)
+      Process.whereis(Server)
+      |> Process.exit(:kill)
     end)
 
     {:ok, [io: pid]}
@@ -57,19 +60,8 @@ defmodule Logger.CircularBufferTest do
     refute_receive {:io, _}
   end
 
-  test "can flush buffer", %{io: io} do
-    Server.attach(io: io)
-    Logger.flush()
-    assert Server.get_buffer() == []
-    Logger.debug("Hi")
-    assert_receive {:io, _message}
-    Logger.flush()
-    assert Server.get_buffer() == []
-  end
-
   test "can get buffer", %{io: io} do
     {:ok, client} = Server.attach(io: io)
-    Server.flush_buffer()
     Logger.debug("Hello")
     assert_receive {:io, message}
     buffer = Server.get_buffer()
@@ -86,7 +78,6 @@ defmodule Logger.CircularBufferTest do
   test "buffer does not exceed size", %{io: io} do
     Logger.configure_backend(Logger.CircularBuffer, buffer_size: 2)
     Server.attach(io: io)
-    Server.flush_buffer()
 
     Logger.debug("Foo")
     assert_receive {:io, _message}
