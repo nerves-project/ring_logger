@@ -42,15 +42,17 @@ defmodule Logger.CircularBuffer.Client do
   end
 
   def log(message, config) do
-    item = format_message(message, config)
+    item = 
+      format_message(message, config)
+      |> IO.iodata_to_binary()
     IO.binwrite(config[:io], item)
   end
 
   def format_message({level, {_, msg, ts, md}}, config) do
+    metadata = take_metadata(md, config[:metadata])
     config[:format]
-    |> Logger.Formatter.format(level, msg, ts, take_metadata(md, config[:metadata]))
+    |> Logger.Formatter.format(level, msg, ts, metadata)
     |> color_event(level, config[:colors], md)
-    |> IO.iodata_to_binary()
   end
 
   ## Helpers

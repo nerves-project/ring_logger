@@ -10,7 +10,9 @@ defmodule Logger.CircularBuffer.Server do
     defstruct clients: [],
               buffer: [],
               buffer_actual_size: 0,
-              buffer_size: nil
+              buffer_size: nil,
+              buffer_start_index: 0,
+              buffer_end_index: 0
   end
 
   def start_link(opts) do
@@ -66,23 +68,16 @@ defmodule Logger.CircularBuffer.Server do
   end
 
   def handle_cast({:log, msg}, state) do
-    Enum.each(state.clients, &send(&1.task, {:log, msg, &1.config}))
-    {:noreply, buffer_message(msg, state)}
+    {:noreply, push(msg, state)}
   end
 
   def handle_info({:DOWN, _ref, _, pid, _reason}, state) do
     {:noreply, detach_client(pid, state)}
   end
 
-  defp buffer_message(msg, %{buffer_size: size, buffer_actual_size: size} = state) do
-    buffer = :queue.in(msg, state.buffer)
-    {_, buffer} = :queue.out(buffer)
-    %{state | buffer: buffer}
-  end
-
-  defp buffer_message(msg, state) do
-    buffer = :queue.in(msg, state.buffer)
-    %{state | buffer: buffer, buffer_actual_size: state.buffer_actual_size + 1}
+  def terminate(_reason, state) do
+    IO.puts "Terminate server"
+    :ok
   end
 
   defp attach_client(client, state) do
@@ -105,7 +100,18 @@ defmodule Logger.CircularBuffer.Server do
 
   defp demonitor(%{monitor_ref: ref}), do: Process.demonitor(ref)
 
-  defp trim_buffer(%{buffer_size: size, buffer_actual_size: actual, buffer: buffer} = state)
+  defp merge_opts(opts, state) do
+    opts =
+      opts
+      |> Keyword.take(@opts)
+      |> Enum.into(%{})
+
+    state
+    |> Map.merge(opts)
+    |> trim
+  end
+
+  defp trim(%{buffer_size: size, buffer_actual_size: actual, buffer: buffer} = state)
        when actual >= size do
     trim = actual - size
 
@@ -118,16 +124,21 @@ defmodule Logger.CircularBuffer.Server do
     %{state | buffer: buffer, buffer_actual_size: size}
   end
 
-  defp trim_buffer(state), do: state
+  defp trim(state), do: state
 
-  defp merge_opts(opts, state) do
-    opts =
-      opts
-      |> Keyword.take(@opts)
-      |> Enum.into(%{})
-
-    state
-    |> Map.merge(opts)
-    |> trim_buffer
+  defp push({level, {mod, msg, ts, md}}, state) do
+    index = state.buffer_end_index + 1
+    msg = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
+    state = 
+      if state.buffer_size == state.buffer_actual_size do
+        {_, buffer} = :queue.out(state.buffer)
+        %{state | buffer: buffer, buffer_start_index: state.buffer_start_index + 1}
+      else
+        %{state | buffer_actual_size: state.buffer_actual_size + 1}
+      end
+    
+    Enum.each(state.clients, &send(&1.task, {:log, msg, &1.config}))
+    %{state | buffer: :queue.in(msg, state.buffer), buffer_end_index: index}
   end
+
 end

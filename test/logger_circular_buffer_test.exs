@@ -71,6 +71,7 @@ defmodule Logger.CircularBufferTest do
       buffer
       |> List.first()
       |> Client.format_message(client.config)
+      |> IO.iodata_to_binary()
 
     assert formatted_message == message
   end
@@ -93,6 +94,16 @@ defmodule Logger.CircularBufferTest do
     assert_receive {:io, _message}
     buffer = Server.get_buffer()
     assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
+  end
+
+  test "can format messages", %{io: io} do
+    Server.attach(io: io, format: "$metadata$message", metadata: [:index])
+    Logger.debug("Hello")
+    assert_receive {:io, message}
+    assert message =~ "index=1 Hello"
+    Logger.debug("World")
+    assert_receive {:io, message}
+    assert message =~ "index=2 World"
   end
 
   defp capture_log(fun) do
