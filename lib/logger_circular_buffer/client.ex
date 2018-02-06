@@ -1,34 +1,25 @@
 defmodule Logger.CircularBuffer.Client do
+  alias Logger.CircularBuffer.Config
+
   defstruct pid: nil,
             task: nil,
             monitor_ref: nil,
-            config: []
+            io: nil,
+            config: nil
 
-  def init(pid, task, config) do
-    colors = configure_colors(config)
-    metadata = Keyword.get(config, :metadata, []) |> configure_metadata()
-    format = Logger.Formatter.compile(Keyword.get(config, :format))
-    io = Keyword.get(config, :io) || :stdio
-
-    config =
-      config
-      |> Keyword.put(:format, format)
-      |> Keyword.put(:metadata, metadata)
-      |> Keyword.put(:colors, colors)
-      |> Keyword.put(:io, io)
-
+  def init(pid, task, config \\ nil) do
     %__MODULE__{
       pid: pid,
       task: task,
       monitor_ref: Process.monitor(task),
-      config: config
+      config: Config.init(config)
     }
   end
 
   def loop() do
     receive do
-      {:log, {level, _} = msg, config} ->
-        min_level = Keyword.get(config, :level)
+      {:log, {level, _} = msg, %{config: config}} ->
+        min_level = Map.get(config, :level)
 
         if meet_level?(level, min_level) do
           log(msg, config)
@@ -41,36 +32,22 @@ defmodule Logger.CircularBuffer.Client do
     loop()
   end
 
-  def log(message, config) do
+  def log(message, %Config{} = config) do
     item = 
       format_message(message, config)
       |> IO.iodata_to_binary()
-    IO.binwrite(config[:io], item)
+    IO.binwrite(config.io, item)
   end
 
-  def format_message({level, {_, msg, ts, md}}, config) do
-    metadata = take_metadata(md, config[:metadata])
-    config[:format]
+  def format_message({level, {_, msg, ts, md}}, %Config{} = config) do
+    metadata = take_metadata(md, config.metadata)
+    config
+    |> Map.get(:format)
     |> Logger.Formatter.format(level, msg, ts, metadata)
-    |> color_event(level, config[:colors], md)
+    |> color_event(level, config.colors, md)
   end
 
   ## Helpers
-
-  defp configure_metadata(:all), do: :all
-  defp configure_metadata(metadata), do: Enum.reverse(metadata)
-
-  defp configure_colors(config) do
-    colors = Keyword.get(config, :colors, [])
-
-    %{
-      debug: Keyword.get(colors, :debug, :cyan),
-      info: Keyword.get(colors, :info, :normal),
-      warn: Keyword.get(colors, :warn, :yellow),
-      error: Keyword.get(colors, :error, :red),
-      enabled: Keyword.get(colors, :enabled, IO.ANSI.enabled?())
-    }
-  end
 
   defp meet_level?(_lvl, nil), do: true
 

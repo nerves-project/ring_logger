@@ -15,7 +15,7 @@ defmodule Logger.CircularBuffer.Server do
               buffer_end_index: 0
   end
 
-  def start_link(opts) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
@@ -137,7 +137,7 @@ defmodule Logger.CircularBuffer.Server do
         %{state | buffer_actual_size: state.buffer_actual_size + 1}
       end
     
-    Enum.each(state.clients, &send(&1.task, {:log, msg, &1.config}))
+    Enum.each(state.clients, &send(&1.task, {:log, msg, &1}))
     %{state | buffer: :queue.in(msg, state.buffer), buffer_end_index: index}
   end
 

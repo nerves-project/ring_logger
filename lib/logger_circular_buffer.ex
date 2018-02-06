@@ -1,12 +1,13 @@
 defmodule Logger.CircularBuffer do
   @behaviour :gen_event
 
-  alias Logger.CircularBuffer.Server
+  alias Logger.CircularBuffer.{Server, Client}
 
   defdelegate attach(opts \\ []), to: Server
   defdelegate detach(), to: Server
   defdelegate get_buffer(), to: Server
   defdelegate configure(opts), to: Server
+  defdelegate format_message(message, config), to: Client
 
   def flush_buffer do
     Logger.flush()
