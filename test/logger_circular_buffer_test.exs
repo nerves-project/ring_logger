@@ -64,7 +64,7 @@ defmodule Logger.CircularBufferTest do
     {:ok, client} = Server.attach(io: io)
     Logger.debug("Hello")
     assert_receive {:io, message}
-    buffer = Server.get_buffer()
+    {:ok, buffer} = Server.get_buffer()
     assert [{:debug, {Logger, "Hello", _, _}}] = buffer
 
     formatted_message =
@@ -82,17 +82,17 @@ defmodule Logger.CircularBufferTest do
 
     Logger.debug("Foo")
     assert_receive {:io, _message}
-    buffer = Server.get_buffer()
+    {:ok, buffer} = Server.get_buffer()
     assert [{:debug, {Logger, "Foo", _, _}}] = buffer
 
     Logger.debug("Bar")
     assert_receive {:io, _message}
-    buffer = Server.get_buffer()
+    {:ok, buffer} = Server.get_buffer()
     assert [{:debug, {Logger, "Foo", _, _}}, {:debug, {Logger, "Bar", _, _}}] = buffer
 
     Logger.debug("Baz")
     assert_receive {:io, _message}
-    buffer = Server.get_buffer()
+    {:ok, buffer} = Server.get_buffer()
     assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
 
@@ -105,9 +105,9 @@ defmodule Logger.CircularBufferTest do
     assert_receive {:io, _message}
     Logger.debug("Baz")
     assert_receive {:io, _message}
-    buffer = Server.get_buffer(2)
+    {:ok, buffer} = Server.get_buffer(2)
     assert [{:debug, {Logger, "Baz", _, _}}] = buffer
-    buffer = Server.get_buffer(1)
+    {:ok, buffer} = Server.get_buffer(1)
     assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
 
@@ -118,8 +118,12 @@ defmodule Logger.CircularBufferTest do
     assert_receive {:io, _message}
     Logger.debug("Bar")
     assert_receive {:io, _message}
-    buffer = Server.get_buffer(0)
+    {:ok, buffer} = Server.get_buffer(0)
     assert [{:debug, {Logger, "Bar", _, _}}] = buffer
+  end
+
+  test "receive an error when fetching buffer out of range" do
+    assert {:error, _} = Server.get_buffer(100)
   end
 
   test "can format messages", %{io: io} do

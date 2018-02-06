@@ -65,15 +65,19 @@ defmodule Logger.CircularBuffer.Server do
   end
 
   def handle_call({:get_buffer, start_index}, _from, state) do
-    buffer_range = 
-      if start_index <= state.buffer_start_index do
-        :queue.to_list(state.buffer)
-      else
-        {_, buffer_range} = 
-          :queue.split(start_index - state.buffer_start_index, state.buffer)
-        :queue.to_list(buffer_range)
+    resp = 
+      cond do
+        start_index <= state.buffer_start_index ->
+          {:ok, :queue.to_list(state.buffer)}
+        start_index > state.buffer_end_index ->
+          {:error, "Out of buffer index range #{state.buffer_start_index}..#{state.buffer_end_index}"}
+        true ->
+          {_, buffer_range} = 
+            :queue.split(start_index - state.buffer_start_index, state.buffer)
+          {:ok, :queue.to_list(buffer_range)}
       end
-    {:reply, buffer_range, state}
+
+    {:reply, resp, state}
   end
 
   def handle_cast({:log, msg}, state) do
@@ -82,11 +86,6 @@ defmodule Logger.CircularBuffer.Server do
 
   def handle_info({:DOWN, _ref, _, pid, _reason}, state) do
     {:noreply, detach_client(pid, state)}
-  end
-
-  def terminate(_reason, state) do
-    IO.puts "Terminate server"
-    :ok
   end
 
   defp attach_client(client, state) do

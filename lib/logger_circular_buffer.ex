@@ -5,7 +5,7 @@ defmodule Logger.CircularBuffer do
 
   defdelegate attach(opts \\ []), to: Server
   defdelegate detach(), to: Server
-  defdelegate get_buffer(), to: Server
+  defdelegate get_buffer(index \\ 0), to: Server
   defdelegate configure(opts), to: Server
   defdelegate format_message(message, config), to: Client
 
