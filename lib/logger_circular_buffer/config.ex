@@ -12,7 +12,7 @@ defmodule Logger.CircularBuffer.Config do
       format: Logger.Formatter.compile(Keyword.get(config, :format))
     }
   end
-  
+
   defp configure_metadata(:all), do: :all
   defp configure_metadata(metadata), do: Enum.reverse(metadata)
 
@@ -27,5 +27,4 @@ defmodule Logger.CircularBuffer.Config do
       enabled: Keyword.get(colors, :enabled, IO.ANSI.enabled?())
     }
   end
-
 end

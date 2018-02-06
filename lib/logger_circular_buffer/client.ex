@@ -33,14 +33,16 @@ defmodule Logger.CircularBuffer.Client do
   end
 
   def log(message, %Config{} = config) do
-    item = 
+    item =
       format_message(message, config)
       |> IO.iodata_to_binary()
+
     IO.binwrite(config.io, item)
   end
 
   def format_message({level, {_, msg, ts, md}}, %Config{} = config) do
     metadata = take_metadata(md, config.metadata)
+
     config
     |> Map.get(:format)
     |> Logger.Formatter.format(level, msg, ts, metadata)

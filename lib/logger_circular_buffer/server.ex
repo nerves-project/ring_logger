@@ -65,15 +65,17 @@ defmodule Logger.CircularBuffer.Server do
   end
 
   def handle_call({:get, start_index}, _from, state) do
-    resp = 
+    resp =
       cond do
         start_index <= state.buffer_start_index ->
           {:ok, :queue.to_list(state.buffer)}
+
         start_index > state.buffer_end_index ->
-          {:error, "Out of buffer index range #{state.buffer_start_index}..#{state.buffer_end_index}"}
+          {:error,
+           "Out of buffer index range #{state.buffer_start_index}..#{state.buffer_end_index}"}
+
         true ->
-          {_, buffer_range} = 
-            :queue.split(start_index - state.buffer_start_index, state.buffer)
+          {_, buffer_range} = :queue.split(start_index - state.buffer_start_index, state.buffer)
           {:ok, :queue.to_list(buffer_range)}
       end
 
@@ -137,16 +139,16 @@ defmodule Logger.CircularBuffer.Server do
   defp push({level, {mod, msg, ts, md}}, state) do
     index = state.buffer_end_index + 1
     msg = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
-    state = 
+
+    state =
       if state.buffer_size == state.buffer_actual_size do
         {_, buffer} = :queue.out(state.buffer)
         %{state | buffer: buffer, buffer_start_index: state.buffer_start_index + 1}
       else
         %{state | buffer_actual_size: state.buffer_actual_size + 1}
       end
-    
+
     Enum.each(state.clients, &send(&1.task, {:log, msg, &1}))
     %{state | buffer: :queue.in(msg, state.buffer), buffer_end_index: index}
   end
-
 end

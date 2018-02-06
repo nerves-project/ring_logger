@@ -15,6 +15,7 @@ defmodule Logger.CircularBufferTest do
     on_exit(fn ->
       Logger.CircularBuffer.TestIO.stop(pid)
       Logger.remove_backend(Logger.CircularBuffer)
+
       Process.whereis(Server)
       |> Process.exit(:kill)
     end)
