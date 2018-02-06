@@ -7,12 +7,10 @@ defmodule Logger.RemoteConsole.Server do
   @opts [:buffer_size]
 
   defmodule State do
-    defstruct [
-      clients: [],
-      buffer: [],
-      buffer_actual_size: 0,
-      buffer_size: nil
-    ]
+    defstruct clients: [],
+              buffer: [],
+              buffer_actual_size: 0,
+              buffer_size: nil
   end
 
   def start_link(opts) do
@@ -23,7 +21,7 @@ defmodule Logger.RemoteConsole.Server do
     GenServer.call(__MODULE__, {:configure, opts})
   end
 
-  def attach(config \\ []) do    
+  def attach(config \\ []) do
     {:ok, task} = Task.start_link(Client, :loop, [])
     GenServer.call(__MODULE__, {:attach, self(), task, config})
   end
@@ -45,12 +43,12 @@ defmodule Logger.RemoteConsole.Server do
   end
 
   def init(opts) do
-    state = 
-      %State{
+    state = %State{
       clients: [],
       buffer: :queue.new(),
-        buffer_size: @buffer_size
-      }
+      buffer_size: @buffer_size
+    }
+
     {:ok, merge_opts(opts, state)}
   end
 
@@ -96,40 +94,42 @@ defmodule Logger.RemoteConsole.Server do
   end
 
   defp attach_client(client, state) do
-    {detatch, clients} = 
-      Enum.split_with(state.clients, &(&1.pid == client.pid))
+    {detatch, clients} = Enum.split_with(state.clients, &(&1.pid == client.pid))
     state = Enum.reduce(detatch, state, &detach_client(&1.pid, &2))
-    
+
     %{state | clients: [client | clients]}
   end
 
   defp detach_client(pid, state) do
-    {detach, clients} = 
-      Enum.split_with(state.clients, &(&1.pid == pid or &1.task == pid))
+    {detach, clients} = Enum.split_with(state.clients, &(&1.pid == pid or &1.task == pid))
     Enum.each(detach, &demonitor/1)
+
     if Process.alive?(pid) do
       Process.exit(pid, :normal)
     end
+
     %{state | clients: clients}
   end
 
   defp demonitor(%{monitor_ref: ref}), do: Process.demonitor(ref)
 
-  defp trim_buffer(%{buffer_size: size, buffer_actual_size: actual, buffer: buffer} = state) 
-    when actual >= size do
+  defp trim_buffer(%{buffer_size: size, buffer_actual_size: actual, buffer: buffer} = state)
+       when actual >= size do
     trim = actual - size
-    buffer = 
-      Enum.reduce(1..trim, buffer, fn(_, buffer) ->  
+
+    buffer =
+      Enum.reduce(1..trim, buffer, fn _, buffer ->
         {_, buffer} = :queue.out(buffer)
         buffer
       end)
+
     %{state | buffer: buffer, buffer_actual_size: size}
   end
 
   defp trim_buffer(state), do: state
 
   defp merge_opts(opts, state) do
-    opts = 
+    opts =
       opts
       |> Keyword.take(@opts)
       |> Enum.into(%{})
@@ -138,5 +138,4 @@ defmodule Logger.RemoteConsole.Server do
     |> Map.merge(opts)
     |> trim_buffer
   end
-
 end

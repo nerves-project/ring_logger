@@ -1,24 +1,22 @@
 defmodule Logger.RemoteConsole.Client do
-  
-  defstruct [
-    pid: nil,
-    task: nil,
-    monitor_ref: nil,
-    config: []
-  ]
+  defstruct pid: nil,
+            task: nil,
+            monitor_ref: nil,
+            config: []
 
   def init(pid, task, config) do
     colors = configure_colors(config)
     metadata = Keyword.get(config, :metadata, []) |> configure_metadata()
     format = Logger.Formatter.compile(Keyword.get(config, :format))
     io = Keyword.get(config, :io) || :stdio
-    config = 
+
+    config =
       config
       |> Keyword.put(:format, format)
       |> Keyword.put(:metadata, metadata)
       |> Keyword.put(:colors, colors)
       |> Keyword.put(:io, io)
-    
+
     %__MODULE__{
       pid: pid,
       task: task,
@@ -31,12 +29,15 @@ defmodule Logger.RemoteConsole.Client do
     receive do
       {:log, {level, _} = msg, config} ->
         min_level = Keyword.get(config, :level)
+
         if meet_level?(level, min_level) do
           log(msg, config)
         end
-      _ -> 
+
+      _ ->
         :ok
     end
+
     loop()
   end
 
@@ -92,5 +93,4 @@ defmodule Logger.RemoteConsole.Client do
     color = md[:ansi_color] || Map.fetch!(colors, level)
     [IO.ANSI.format_fragment(color, true), data | IO.ANSI.reset()]
   end
-
 end

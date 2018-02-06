@@ -11,9 +11,11 @@ defmodule Logger.RemoteConsoleTest do
     Logger.remove_backend(:console)
     Logger.add_backend(Logger.RemoteConsole)
     Logger.configure_backend(Logger.RemoteConsole, buffer_size: 10)
-    on_exit fn ->
+
+    on_exit(fn ->
       Logger.RemoteConsole.TestIO.stop(pid)
-    end
+    end)
+
     {:ok, [io: pid]}
   end
 
@@ -21,15 +23,17 @@ defmodule Logger.RemoteConsoleTest do
     Server.attach(io: io)
     Logger.debug("Hello")
     assert_receive {:io, message}
-    assert message =~ "[debug] Hello"    
+    assert message =~ "[debug] Hello"
   end
 
   test "output is not duplicated on group leader", %{io: io} do
     Server.attach(io: io)
-    output = 
+
+    output =
       capture_log(fn ->
         Logger.debug("Hello")
       end)
+
     assert output == ""
   end
 
@@ -70,10 +74,12 @@ defmodule Logger.RemoteConsoleTest do
     assert_receive {:io, message}
     buffer = Server.get_buffer()
     assert [{:debug, {Logger, "Hello", _, _}}] = buffer
-    formatted_message = 
+
+    formatted_message =
       buffer
-      |> List.first
+      |> List.first()
       |> Client.format_message(client.config)
+
     assert formatted_message == message
   end
 
@@ -90,15 +96,12 @@ defmodule Logger.RemoteConsoleTest do
     Logger.debug("Bar")
     assert_receive {:io, _message}
     buffer = Server.get_buffer()
-    assert [{:debug, {Logger, "Foo", _, _}},
-            {:debug, {Logger, "Bar", _, _}}] = buffer
+    assert [{:debug, {Logger, "Foo", _, _}}, {:debug, {Logger, "Bar", _, _}}] = buffer
 
     Logger.debug("Baz")
     assert_receive {:io, _message}
     buffer = Server.get_buffer()
-    assert [{:debug, {Logger, "Bar", _, _}},
-            {:debug, {Logger, "Baz", _, _}}] = buffer
-    
+    assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
 
   defp capture_log(fun) do

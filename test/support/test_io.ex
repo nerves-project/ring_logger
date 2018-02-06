@@ -20,6 +20,6 @@ defmodule Logger.RemoteConsole.TestIO do
   end
 
   defp reply(from, reply_as, reply) do
-    send from, {:io_reply, reply_as, reply}
+    send(from, {:io_reply, reply_as, reply})
   end
 end
