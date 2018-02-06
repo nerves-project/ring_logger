@@ -96,6 +96,32 @@ defmodule Logger.CircularBufferTest do
     assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
 
+  test "buffer can be fetched by range", %{io: io} do
+    Logger.configure_backend(Logger.CircularBuffer, buffer_size: 3)
+    Server.attach(io: io)
+    Logger.debug("Foo")
+    assert_receive {:io, _message}
+    Logger.debug("Bar")
+    assert_receive {:io, _message}
+    Logger.debug("Baz")
+    assert_receive {:io, _message}
+    buffer = Server.get_buffer(2)
+    assert [{:debug, {Logger, "Baz", _, _}}] = buffer
+    buffer = Server.get_buffer(1)
+    assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
+  end
+
+  test "buffer start index is less then buffer_start_index", %{io: io} do
+    Logger.configure_backend(Logger.CircularBuffer, buffer_size: 1)
+    Server.attach(io: io)
+    Logger.debug("Foo")
+    assert_receive {:io, _message}
+    Logger.debug("Bar")
+    assert_receive {:io, _message}
+    buffer = Server.get_buffer(0)
+    assert [{:debug, {Logger, "Bar", _, _}}] = buffer
+  end
+
   test "can format messages", %{io: io} do
     Server.attach(io: io, format: "$metadata$message", metadata: [:index])
     Logger.debug("Hello")

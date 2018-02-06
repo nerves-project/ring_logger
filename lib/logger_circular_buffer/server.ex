@@ -12,7 +12,8 @@ defmodule Logger.CircularBuffer.Server do
               buffer_actual_size: 0,
               buffer_size: nil,
               buffer_start_index: 0,
-              buffer_end_index: 0
+              buffer_end_index: 0,
+              config: nil
   end
 
   def start_link(opts \\ []) do
@@ -32,8 +33,8 @@ defmodule Logger.CircularBuffer.Server do
     GenServer.call(__MODULE__, {:detach, self()})
   end
 
-  def get_buffer() do
-    GenServer.call(__MODULE__, :get_buffer)
+  def get_buffer(start_index \\ 0) do
+    GenServer.call(__MODULE__, {:get_buffer, start_index})
   end
 
   def log(msg) do
@@ -63,8 +64,16 @@ defmodule Logger.CircularBuffer.Server do
     {:reply, :ok, detach_client(pid, state)}
   end
 
-  def handle_call(:get_buffer, _from, state) do
-    {:reply, :queue.to_list(state.buffer), state}
+  def handle_call({:get_buffer, start_index}, _from, state) do
+    buffer_range = 
+      if start_index <= state.buffer_start_index do
+        :queue.to_list(state.buffer)
+      else
+        {_, buffer_range} = 
+          :queue.split(start_index - state.buffer_start_index, state.buffer)
+        :queue.to_list(buffer_range)
+      end
+    {:reply, buffer_range, state}
   end
 
   def handle_cast({:log, msg}, state) do
