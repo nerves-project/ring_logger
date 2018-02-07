@@ -9,10 +9,6 @@ defmodule LoggerCircularBuffer do
   defdelegate configure(opts), to: Server
   defdelegate format_message(message, config), to: Client
 
-  def flush_buffer do
-    Logger.flush()
-  end
-
   def init(__MODULE__) do
     {:ok, init({__MODULE__, []})}
   end
