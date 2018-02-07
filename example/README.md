@@ -1,26 +1,31 @@
 # Example
 
-Start the example app 
-```
-$ iex --name node1@127.0.0.1 -S mix
+Start the example app:
+
+```bash
+iex --name node1@127.0.0.1 -S mix
 ```
 
 Create a remote connection in another terminal
-```
-$ iex --name node2@127.0.0.1 --remsh node1@127.0.0.1
+
+```bash
+iex --name node2@127.0.0.1 --remsh node1@127.0.0.1
 ```
 
-Attaching to the remote console logger
+Attach to the remote console logger:
+
 ```elixir
 iex(node2@127.0.0.1)> LoggerCircularBuffer.attach
 ```
 
-Detaching from the remote console logger
+Detach from the remote console logger:
+
 ```elixir
 iex(node2@127.0.0.1)> LoggerCircularBuffer.detach
 ```
 
-Get the remote console buffer
+Get all of the log messages:
+
 ```elixir
 iex(node2@127.0.0.1)> LoggerCircularBuffer.get
 [
@@ -54,8 +59,8 @@ iex(node2@127.0.0.1)> LoggerCircularBuffer.get
 ]
 ```
 
-The buffer is stored as unformatted messages and formatting is applies to the
-connected clients. You can apply formatting to the buffer afterwards like this:
+Format the log:
+
 ```elixir
 iex(node1@127.0.0.1)> {:ok, client} = LoggerCircularBuffer.attach
 # ...
