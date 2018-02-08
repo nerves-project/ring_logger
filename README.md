@@ -94,7 +94,7 @@ iex(node2@127.0.0.1)> LoggerCircularBuffer.get
 Formatting is nice. You can apply formatting like this:
 
 ```elixir
-iex> config = Logger.CircularBuffer.Config.init(colors: [enabled: false])
+iex> config = LoggerCircularBuffer.Config.init(colors: [enabled: false])
 %LoggerCircularBuffer.Config{
   colors: %{
     debug: :cyan,
