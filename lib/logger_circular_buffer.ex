@@ -3,12 +3,48 @@ defmodule LoggerCircularBuffer do
 
   alias LoggerCircularBuffer.{Server, Client}
 
+  #
+  # API
+  #
+
+  @doc """
+  Attach the current IEx session to the logger. It will start printing log messages.
+
+  Options include:
+  * `:io` - Defaults to `:stdio`
+  * `:colors` -
+  * `:metadata` - A KV list of additional metadata
+  * `:format` - A custom format string
+  """
   defdelegate attach(opts \\ []), to: Server
+
+  @doc """
+  Detach the current IEx session from the logger.
+  """
   defdelegate detach(), to: Server
+
+  @doc """
+  Get all log messages at the specified index and later.
+  """
   defdelegate get(index \\ 0), to: Server
+
+  @doc """
+  Update the loggers configuration.
+
+  Options include:
+  * `:buffer_size` - the number of log messages to store at a time
+  """
   defdelegate configure(opts), to: Server
+
+  @doc """
+  Helper method for formatting log messages per the current client's
+  configuration.
+  """
   defdelegate format_message(message, config), to: Client
 
+  #
+  # Logger backend callbacks
+  #
   def init(__MODULE__) do
     {:ok, init({__MODULE__, []})}
   end
