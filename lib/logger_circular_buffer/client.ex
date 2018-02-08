@@ -33,9 +33,7 @@ defmodule LoggerCircularBuffer.Client do
   end
 
   def log(message, %Config{} = config) do
-    item =
-      format_message(message, config)
-      |> IO.iodata_to_binary()
+    item = format_message(message, config)
 
     IO.binwrite(config.io, item)
   end
