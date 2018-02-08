@@ -1,6 +1,6 @@
 # logger_circular_buffer
 
-[![CircleCI](https://circleci.com/gh/nerves-project/logger_circular_buffer.svg style=svg)](https://circleci.com/gh/nerves-project/logger_circular_buffer)
+[![CircleCI](https://circleci.com/gh/nerves-project/logger_circular_buffer.svg?style=svg)](https://circleci.com/gh/nerves-project/logger_circular_buffer)
 [![Hex version](https://img.shields.io/hexpm/v/logger_circular_buffer.svg "Hex version")](https://hex.pm/packages/logger_circular_buffer)
 
 This is a circular buffer backend for the [Elixir
