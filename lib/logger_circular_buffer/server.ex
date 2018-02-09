@@ -20,17 +20,32 @@ defmodule LoggerCircularBuffer.Server do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  def stop() do
+    GenServer.stop(__MODULE__)
+  end
+
   def configure(opts) do
     GenServer.call(__MODULE__, {:configure, opts})
   end
 
   def attach(config \\ []) do
-    {:ok, task} = Task.start_link(Client, :loop, [])
-    GenServer.call(__MODULE__, {:attach, self(), task, config})
+    case Process.get(:logger_circular_buffer_client) do
+      nil ->
+        {:ok, client_pid} = Client.start_link(config)
+        Process.put(:logger_circular_buffer_client, client_pid)
+        GenServer.call(__MODULE__, {:attach, client_pid})
+
+      client_pid ->
+        {:error, {:already_started, client_pid}}
+    end
   end
 
   def detach() do
-    GenServer.call(__MODULE__, {:detach, self()})
+    client_pid = Process.delete(:logger_circular_buffer_client)
+
+    if client_pid do
+      GenServer.call(__MODULE__, {:detach, client_pid})
+    end
   end
 
   def get(start_index \\ 0) do
@@ -55,9 +70,8 @@ defmodule LoggerCircularBuffer.Server do
     {:reply, :ok, merge_opts(opts, state)}
   end
 
-  def handle_call({:attach, pid, task, config}, _from, state) do
-    client = Client.init(pid, task, config)
-    {:reply, {:ok, client}, attach_client(client, state)}
+  def handle_call({:attach, client_pid}, _from, state) do
+    {:reply, {:ok, client_pid}, attach_client(client_pid, state)}
   end
 
   def handle_call({:detach, pid}, _from, state) do
@@ -90,25 +104,29 @@ defmodule LoggerCircularBuffer.Server do
     {:noreply, detach_client(pid, state)}
   end
 
-  defp attach_client(client, state) do
-    {detatch, clients} = Enum.split_with(state.clients, &(&1.pid == client.pid))
-    state = Enum.reduce(detatch, state, &detach_client(&1.pid, &2))
-
-    %{state | clients: [client | clients]}
+  def terminate(_reason, state) do
+    Enum.each(state.clients, fn {client_pid, _ref} -> Client.stop(client_pid) end)
+    :ok
   end
 
-  defp detach_client(pid, state) do
-    {detach, clients} = Enum.split_with(state.clients, &(&1.pid == pid or &1.task == pid))
-    Enum.each(detach, &demonitor/1)
+  defp attach_client(client_pid, state) do
+    ref = Process.monitor(client_pid)
+    %{state | clients: [{client_pid, ref} | state.clients]}
+  end
 
-    if Process.alive?(pid) do
-      Process.exit(pid, :normal)
+  defp detach_client(client_pid, state) do
+    case List.keyfind(state.clients, client_pid, 0) do
+      {_client_pid, ref} ->
+        Process.demonitor(ref)
+        Client.stop(client_pid)
+
+        remaining_clients = List.keydelete(state.clients, client_pid, 0)
+        %{state | clients: remaining_clients}
+
+      nil ->
+        state
     end
-
-    %{state | clients: clients}
   end
-
-  defp demonitor(%{monitor_ref: ref}), do: Process.demonitor(ref)
 
   defp merge_opts(opts, state) do
     opts =
@@ -148,7 +166,11 @@ defmodule LoggerCircularBuffer.Server do
         %{state | buffer_actual_size: state.buffer_actual_size + 1}
       end
 
-    Enum.each(state.clients, &send(&1.task, {:log, msg, &1}))
+    Enum.each(state.clients, &send_log(&1, msg))
     %{state | buffer: :queue.in(msg, state.buffer), buffer_end_index: index}
+  end
+
+  defp send_log({client_pid, _ref}, msg) do
+    send(client_pid, {:log, msg})
   end
 end

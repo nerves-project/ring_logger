@@ -1,44 +1,48 @@
 defmodule LoggerCircularBuffer.Client do
   alias LoggerCircularBuffer.Config
+  use GenServer
 
-  defstruct pid: nil,
-            task: nil,
-            monitor_ref: nil,
-            io: nil,
+  defstruct io: nil,
             config: nil
 
-  def init(pid, task, config \\ nil) do
-    %__MODULE__{
-      pid: pid,
-      task: task,
-      monitor_ref: Process.monitor(task),
+  def start_link(config \\ []) do
+    GenServer.start_link(__MODULE__, config)
+  end
+
+  def stop(server) do
+    GenServer.stop(server)
+  end
+
+  def format(server, msg) do
+    GenServer.call(server, {:format, msg})
+  end
+
+  def init(config) do
+    state = %__MODULE__{
       config: Config.init(config)
     }
+
+    {:ok, state}
   end
 
-  def loop() do
-    receive do
-      {:log, {level, _} = msg, %{config: config}} ->
-        min_level = Map.get(config, :level)
+  def handle_info({:log, {level, _} = msg}, state) do
+    min_level = Map.get(state.config, :level)
 
-        if meet_level?(level, min_level) do
-          log(msg, config)
-        end
+    if meet_level?(level, min_level) do
+      item = format_message(msg, state.config)
 
-      _ ->
-        :ok
+      IO.binwrite(state.config.io, item)
     end
 
-    loop()
+    {:noreply, state}
   end
 
-  def log(message, %Config{} = config) do
-    item = format_message(message, config)
-
-    IO.binwrite(config.io, item)
+  def handle_call({:format, msg}, _from, state) do
+    item = format_message(msg, state.config)
+    {:reply, item, state}
   end
 
-  def format_message({level, {_, msg, ts, md}}, %Config{} = config) do
+  defp format_message({level, {_, msg, ts, md}}, %Config{} = config) do
     metadata = take_metadata(md, config.metadata)
 
     config

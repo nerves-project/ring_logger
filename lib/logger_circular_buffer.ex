@@ -3,6 +3,13 @@ defmodule LoggerCircularBuffer do
 
   alias LoggerCircularBuffer.{Server, Client}
 
+  @typedoc "Option values used by `attach`"
+  @type attach_option ::
+          {:io, term}
+          | {:color, term}
+          | {:metadata, Logger.metadata()}
+          | {:format, String.t()}
+
   #
   # API
   #
@@ -16,6 +23,7 @@ defmodule LoggerCircularBuffer do
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string
   """
+  @spec attach([attach_option]) :: {:ok, pid} | {:error, {:already_started, pid}}
   defdelegate attach(opts \\ []), to: Server
 
   @doc """
@@ -40,7 +48,11 @@ defmodule LoggerCircularBuffer do
   Helper method for formatting log messages per the current client's
   configuration.
   """
-  defdelegate format_message(message, config), to: Client
+  def format_message(message) do
+    client_pid = Process.get(:logger_circular_buffer_client)
+    unless client_pid, do: raise(RuntimeError, message: "attach first")
+    Client.format(client_pid, message)
+  end
 
   #
   # Logger backend callbacks
@@ -82,6 +94,7 @@ defmodule LoggerCircularBuffer do
   end
 
   def terminate(_reason, _state) do
+    Server.stop()
     :ok
   end
 end
