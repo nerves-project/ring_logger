@@ -28,24 +28,12 @@ defmodule LoggerCircularBuffer.Server do
     GenServer.call(__MODULE__, {:configure, opts})
   end
 
-  def attach(config \\ []) do
-    case Process.get(:logger_circular_buffer_client) do
-      nil ->
-        {:ok, client_pid} = Client.start_link(config)
-        Process.put(:logger_circular_buffer_client, client_pid)
-        GenServer.call(__MODULE__, {:attach, client_pid})
-
-      client_pid ->
-        {:error, {:already_started, client_pid}}
-    end
+  def attach_client(client_pid) do
+    GenServer.call(__MODULE__, {:attach, client_pid})
   end
 
-  def detach() do
-    client_pid = Process.delete(:logger_circular_buffer_client)
-
-    if client_pid do
-      GenServer.call(__MODULE__, {:detach, client_pid})
-    end
+  def detach_client(client_pid) do
+    GenServer.call(__MODULE__, {:detach, client_pid})
   end
 
   def get(start_index \\ 0) do
@@ -71,7 +59,7 @@ defmodule LoggerCircularBuffer.Server do
   end
 
   def handle_call({:attach, client_pid}, _from, state) do
-    {:reply, {:ok, client_pid}, attach_client(client_pid, state)}
+    {:reply, :ok, attach_client(client_pid, state)}
   end
 
   def handle_call({:detach, pid}, _from, state) do
@@ -109,16 +97,15 @@ defmodule LoggerCircularBuffer.Server do
     :ok
   end
 
-  defp attach_client(client_pid, state) do
+  def attach_client(client_pid, state) do
     ref = Process.monitor(client_pid)
     %{state | clients: [{client_pid, ref} | state.clients]}
   end
 
-  defp detach_client(client_pid, state) do
+  def detach_client(client_pid, state) do
     case List.keyfind(state.clients, client_pid, 0) do
       {_client_pid, ref} ->
         Process.demonitor(ref)
-        Client.stop(client_pid)
 
         remaining_clients = List.keydelete(state.clients, client_pid, 0)
         %{state | clients: remaining_clients}

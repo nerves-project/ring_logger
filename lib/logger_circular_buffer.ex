@@ -24,35 +24,34 @@ defmodule LoggerCircularBuffer do
   * `:format` - A custom format string
   """
   @spec attach([attach_option]) :: {:ok, pid} | {:error, {:already_started, pid}}
-  defdelegate attach(opts \\ []), to: Server
+  defdelegate attach(opts \\ []), to: Client
 
   @doc """
   Detach the current IEx session from the logger.
   """
-  defdelegate detach(), to: Server
-
-  @doc """
-  Get all log messages at the specified index and later.
-  """
-  defdelegate get(index \\ 0), to: Server
-
-  @doc """
-  Update the loggers configuration.
-
-  Options include:
-  * `:buffer_size` - the number of log messages to store at a time
-  """
-  defdelegate configure(opts), to: Server
+  @spec detach() :: :ok
+  defdelegate detach(), to: Client
 
   @doc """
   Helper method for formatting log messages per the current client's
   configuration.
   """
-  def format_message(message) do
-    client_pid = Process.get(:logger_circular_buffer_client)
-    unless client_pid, do: raise(RuntimeError, message: "attach first")
-    Client.format(client_pid, message)
-  end
+  @spec format_message(String.t()) :: :ok
+  defdelegate format_message(message), to: Client
+
+  @doc """
+  Get all log messages at the specified index and later.
+  """
+  @spec get(non_neg_integer) :: [term]
+  defdelegate get(index \\ 0), to: Server
+
+  @doc """
+  Update the logger configuration.
+
+  Options include:
+  * `:buffer_size` - the number of log messages to store at a time
+  """
+  defdelegate configure(opts), to: Server
 
   #
   # Logger backend callbacks

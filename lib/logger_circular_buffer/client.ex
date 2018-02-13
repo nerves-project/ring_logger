@@ -1,26 +1,51 @@
 defmodule LoggerCircularBuffer.Client do
-  alias LoggerCircularBuffer.Config
   use GenServer
+
+  alias LoggerCircularBuffer.{Config, Server}
 
   defstruct io: nil,
             config: nil
+
+  def attach(config \\ []) do
+    case Process.get(:logger_circular_buffer_client) do
+      nil ->
+        {:ok, client_pid} = start_link(config)
+        Process.put(:logger_circular_buffer_client, client_pid)
+        {:ok, client_pid}
+
+      client_pid ->
+        {:error, {:already_started, client_pid}}
+    end
+  end
+
+  def detach() do
+    client_pid = Process.delete(:logger_circular_buffer_client)
+
+    if client_pid do
+      stop(client_pid)
+    end
+  end
+
+  def format_message(message) do
+    client_pid = Process.get(:logger_circular_buffer_client)
+    unless client_pid, do: raise(RuntimeError, message: "attach first")
+    GenServer.call(client_pid, {:format, message})
+  end
 
   def start_link(config \\ []) do
     GenServer.start_link(__MODULE__, config)
   end
 
-  def stop(server) do
-    GenServer.stop(server)
-  end
-
-  def format(server, msg) do
-    GenServer.call(server, {:format, msg})
+  def stop(client_pid) do
+    GenServer.stop(client_pid)
   end
 
   def init(config) do
     state = %__MODULE__{
       config: Config.init(config)
     }
+
+    :ok = Server.attach_client(self())
 
     {:ok, state}
   end
