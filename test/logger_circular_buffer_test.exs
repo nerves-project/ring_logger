@@ -8,7 +8,11 @@ defmodule LoggerCircularBufferTest do
   setup do
     {:ok, pid} = LoggerCircularBuffer.TestIO.start(self())
     Logger.remove_backend(:console)
+
+    # Flush any latent messages in the Logger to avoid them polluting
+    # our tests
     Logger.flush()
+
     Logger.add_backend(LoggerCircularBuffer)
     Logger.configure_backend(LoggerCircularBuffer, buffer_size: 10)
 
