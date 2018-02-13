@@ -25,8 +25,7 @@ defmodule LoggerCircularBuffer.MixProject do
   end
 
   defp docs do
-    [extras: ["README.md"],
-     main: "readme"]
+    [extras: ["README.md"], main: "readme"]
   end
 
   defp deps do
@@ -40,8 +39,10 @@ defmodule LoggerCircularBuffer.MixProject do
   end
 
   defp package do
-    [maintainers: ["Justin Schneck"],
-     licenses: ["Apache 2.0"],
-     links: %{"Github" => "https://github.com/nerves-project/logger_circular_buffer"}]
+    [
+      maintainers: ["Justin Schneck"],
+      licenses: ["Apache 2.0"],
+      links: %{"Github" => "https://github.com/nerves-project/logger_circular_buffer"}
+    ]
   end
 end
