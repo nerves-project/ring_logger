@@ -18,6 +18,7 @@ defmodule LoggerCircularBuffer.Client do
     end
   end
 
+  @spec detach() :: :ok
   def detach() do
     client_pid = Process.delete(:logger_circular_buffer_client)
 

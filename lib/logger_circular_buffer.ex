@@ -10,6 +10,12 @@ defmodule LoggerCircularBuffer do
           | {:metadata, Logger.metadata()}
           | {:format, String.t()}
 
+  @type entry ::
+          { module(), Logger.level(),
+          Logger.message(),
+          Logger.Formatter.time(),
+          keyword()}
+
   #
   # API
   #
@@ -36,13 +42,13 @@ defmodule LoggerCircularBuffer do
   Helper method for formatting log messages per the current client's
   configuration.
   """
-  @spec format_message(String.t()) :: :ok
+  @spec format_message(entry()) :: :ok
   defdelegate format_message(message), to: Client
 
   @doc """
   Get all log messages at the specified index and later.
   """
-  @spec get(non_neg_integer) :: [term]
+  @spec get(non_neg_integer()) :: [entry()]
   defdelegate get(index \\ 0), to: Server
 
   @doc """
