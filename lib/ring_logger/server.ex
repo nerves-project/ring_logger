@@ -1,7 +1,7 @@
-defmodule LoggerCircularBuffer.Server do
+defmodule RingLogger.Server do
   use GenServer
 
-  alias LoggerCircularBuffer.Client
+  alias RingLogger.Client
 
   @opts [:max_size]
 
@@ -35,7 +35,7 @@ defmodule LoggerCircularBuffer.Server do
     GenServer.call(__MODULE__, {:detach, client_pid})
   end
 
-  @spec get(non_neg_integer()) :: [LoggerCircularBuffer.entry()]
+  @spec get(non_neg_integer()) :: [RingLogger.entry()]
   def get(start_index \\ 0) do
     GenServer.call(__MODULE__, {:get, start_index})
   end

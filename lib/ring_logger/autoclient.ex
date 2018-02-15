@@ -1,9 +1,9 @@
-defmodule LoggerCircularBuffer.Autoclient do
-  alias LoggerCircularBuffer.Client
+defmodule RingLogger.Autoclient do
+  alias RingLogger.Client
 
   @moduledoc """
-  This is a helper module for LoggerCircularBuffer.Client that makes it easy to use at the IEx prompt by removing
-  the need to keep track of pids. Programs should normally call LoggerCircularBuffer.Client directly to avoid
+  This is a helper module for RingLogger.Client that makes it easy to use at the IEx prompt by removing
+  the need to keep track of pids. Programs should normally call RingLogger.Client directly to avoid
   many of the automatic behaviors that this module adds.
   """
 
@@ -27,10 +27,10 @@ defmodule LoggerCircularBuffer.Autoclient do
   end
 
   @doc """
-  Completely stop the LoggerCircularBuffer.Client. You normally don't need to run this.
+  Completely stop the RingLogger.Client. You normally don't need to run this.
   """
   def forget() do
-    client_pid = Process.delete(:logger_circular_buffer_client)
+    client_pid = Process.delete(:ring_logger_client)
     if client_pid do
       Client.stop(client_pid)
     end
@@ -56,7 +56,7 @@ defmodule LoggerCircularBuffer.Autoclient do
   end
 
   @doc """
-  Format a log message. This is useful if you're calling `LoggerCircularBuffer.get/1` directly.
+  Format a log message. This is useful if you're calling `RingLogger.get/1` directly.
   """
   def format(message) do
     with :ok <- check_server_started(),
@@ -65,15 +65,15 @@ defmodule LoggerCircularBuffer.Autoclient do
   end
 
   defp check_server_started() do
-    if !Process.whereis(LoggerCircularBuffer.Server) do
+    if !Process.whereis(RingLogger.Server) do
       IO.puts("""
-      The LoggerCircularBuffer backend isn't running. Please start it by adding the following to your config.exs:
+      The RingLogger backend isn't running. Please start it by adding the following to your config.exs:
 
-        config :logger, backends: [LoggerCircularBuffer]
+        config :logger, backends: [RingLogger]
 
       or start it manually:
 
-        iex> Logger.add_backend(LoggerCircularBuffer)
+        iex> Logger.add_backend(RingLogger)
       """)
 
       {:error, :not_started}
@@ -86,7 +86,7 @@ defmodule LoggerCircularBuffer.Autoclient do
     case get_client_pid() do
       nil ->
         {:ok, pid} = Client.start_link(config)
-        Process.put(:logger_circular_buffer_client, pid)
+        Process.put(:ring_logger_client, pid)
         pid
 
       pid ->
@@ -95,6 +95,6 @@ defmodule LoggerCircularBuffer.Autoclient do
   end
 
   defp get_client_pid() do
-    Process.get(:logger_circular_buffer_client)
+    Process.get(:ring_logger_client)
   end
 end

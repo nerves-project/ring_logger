@@ -1,9 +1,9 @@
-defmodule LoggerCircularBuffer.MixProject do
+defmodule RingLogger.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :logger_circular_buffer,
+      app: :ring_logger,
       version: "0.2.0",
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
@@ -34,7 +34,7 @@ defmodule LoggerCircularBuffer.MixProject do
 
   defp description do
     """
-    A circular buffer backend for Elixir Logger with support for IO streaming.
+    A ring buffer backend for Elixir Logger with IO streaming.
     """
   end
 
@@ -42,7 +42,7 @@ defmodule LoggerCircularBuffer.MixProject do
     [
       maintainers: ["Justin Schneck", "Frank Hunleth"],
       licenses: ["Apache 2.0"],
-      links: %{"Github" => "https://github.com/nerves-project/logger_circular_buffer"}
+      links: %{"Github" => "https://github.com/nerves-project/ring_logger"}
     ]
   end
 end

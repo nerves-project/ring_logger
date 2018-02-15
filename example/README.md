@@ -27,7 +27,7 @@ informative for this example.
 Now, on `node2`, try attaching to the log so that you can see the messages:
 
 ```elixir
-iex(node1@0.0.0.0)> LoggerCircularBuffer.attach
+iex(node1@0.0.0.0)> RingLogger.attach
 :ok
 
 12:48:43.142 [debug] 10
@@ -42,7 +42,7 @@ iex(node1@0.0.0.0)>
 When you're tired of watching the messages, detach:
 
 ```elixir
-iex(node1@0.0.0.0)> LoggerCircularBuffer.detach
+iex(node1@0.0.0.0)> RingLogger.detach
 :ok
 ```
 
@@ -50,7 +50,7 @@ If you're the type of person who prefers to poll their logs, you can do that
 too:
 
 ```elixir
-iex(node1@0.0.0.0)> LoggerCircularBuffer.tail
+iex(node1@0.0.0.0)> RingLogger.tail
 
 12:48:43.142 [debug] 285
 
@@ -62,8 +62,8 @@ iex(node1@0.0.0.0)> LoggerCircularBuffer.tail
 iex(node1@0.0.0.0)>
 ```
 
-`LoggerCircularBuffer.tail` keeps track of your position in the log so only new
+`RingLogger.tail` keeps track of your position in the log so only new
 messages get printed. If you create a new remote shell session, the position is
-reset. You can also call `LoggerCircularBuffer.reset` to reset the position
+reset. You can also call `RingLogger.reset` to reset the position
 manually. Keep in mind that logs are stored in a ring buffer, so as soon as the
 log hits the maximum configured length, old messages will be discarded.

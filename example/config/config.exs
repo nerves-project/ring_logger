@@ -2,6 +2,6 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :logger, backends: [:console, LoggerCircularBuffer]
+config :logger, backends: [:console, RingLogger]
 
-config :logger, LoggerCircularBuffer, max_size: 20
+config :logger, RingLogger, max_size: 20

@@ -1,7 +1,7 @@
-defmodule LoggerCircularBuffer.Client do
+defmodule RingLogger.Client do
   use GenServer
 
-  alias LoggerCircularBuffer.Server
+  alias RingLogger.Server
 
   defstruct io: nil,
             colors: nil,

@@ -1,7 +1,7 @@
-defmodule LoggerCircularBuffer do
+defmodule RingLogger do
   @behaviour :gen_event
 
-  alias LoggerCircularBuffer.{Server, Autoclient}
+  alias RingLogger.{Server, Autoclient}
 
   @typedoc "Option values used by `attach`"
   @type client_option ::
