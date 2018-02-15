@@ -40,7 +40,7 @@ defmodule LoggerCircularBuffer.MixProject do
 
   defp package do
     [
-      maintainers: ["Justin Schneck"],
+      maintainers: ["Justin Schneck", "Frank Hunleth"],
       licenses: ["Apache 2.0"],
       links: %{"Github" => "https://github.com/nerves-project/logger_circular_buffer"}
     ]
