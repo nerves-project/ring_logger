@@ -1,16 +1,19 @@
 # Example
 
 This example starts a process that repeatedly logs messages. You can run it
-normally (`iex -S mix`) or via a remote shell. Since this logger is more
-interesting for the remote access, we'll demo that:
+normally (`iex -S mix`) or with Erlang distribution enabled. We'll run it using
+Erlang distribution so that you can simultaneously see what gets logged with
+Elixir's default `:console` logger on the first node and what you can get when
+you remote shell into it.
 
 First, start the example application as `node1`:
 
 ```bash
+cd example
 iex --name node1@0.0.0.0 -S mix
 ```
 
-Create another terminal and remote shell into `node1`:
+Open another terminal and remote shell into `node1`:
 
 ```bash
 iex --name node2@0.0.0.0 --remsh node1@0.0.0.0
@@ -21,27 +24,42 @@ At this point, you should see `:console` logger messages scrolling by on
 use, you will probably consider disabling the `:console` logger, but it is
 informative for this example.
 
-Now, on `node2`, try attaching to the log:
+Now, on `node2`, try attaching to the log so that you can see the messages:
 
 ```elixir
 iex(node1@0.0.0.0)> LoggerCircularBuffer.attach
+:ok
+
+12:48:43.142 [debug] 10
+
+12:48:43.142 [debug] 11
+
+...
+
+iex(node1@0.0.0.0)>
 ```
 
-You should see log messages now. When you're tired of watching them, detach:
+When you're tired of watching the messages, detach:
 
 ```elixir
 iex(node1@0.0.0.0)> LoggerCircularBuffer.detach
+:ok
 ```
 
-If you're the type of person who prefers to poll their logs manually, you can do
-that too:
+If you're the type of person who prefers to poll their logs, you can do that
+too:
 
 ```elixir
-iex(node1@0.0.0.0)5> LoggerCircularBuffer.tail
+iex(node1@0.0.0.0)> LoggerCircularBuffer.tail
 
 12:48:43.142 [debug] 285
 
 12:48:44.143 [debug] 286
+
+...
+
+:ok
+iex(node1@0.0.0.0)>
 ```
 
 `LoggerCircularBuffer.tail` keeps track of your position in the log so only new
