@@ -97,22 +97,29 @@ defmodule LoggerCircularBuffer.Server do
     :ok
   end
 
-  def attach_client(client_pid, state) do
-    ref = Process.monitor(client_pid)
-    %{state | clients: [{client_pid, ref} | state.clients]}
+  defp attach_client(client_pid, state) do
+    if !client_info(client_pid, state) do
+      ref = Process.monitor(client_pid)
+      %{state | clients: [{client_pid, ref} | state.clients]}
+    else
+      state
+    end
   end
 
-  def detach_client(client_pid, state) do
-    case List.keyfind(state.clients, client_pid, 0) do
+  defp detach_client(client_pid, state) do
+    case client_info(client_pid, state) do
       {_client_pid, ref} ->
         Process.demonitor(ref)
 
         remaining_clients = List.keydelete(state.clients, client_pid, 0)
         %{state | clients: remaining_clients}
-
       nil ->
         state
     end
+  end
+
+  defp client_info(client_pid, state) do
+    List.keyfind(state.clients, client_pid, 0)
   end
 
   defp merge_opts(opts, state) do

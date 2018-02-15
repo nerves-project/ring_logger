@@ -25,25 +25,29 @@ defmodule LoggerCircularBufferTest do
   end
 
   test "can attach", %{io: io} do
-    {:ok, _} = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Hello")
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
   end
 
-  test "attaching twice returns an error", %{io: io} do
-    {:ok, pid} = LoggerCircularBuffer.attach(io: io)
-    assert {:error, {:already_started, pid}} == LoggerCircularBuffer.attach(io: io)
+  test "attaching twice doesn't duplicate messages", %{io: io} do
+    :ok = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
+    Logger.debug("Hello")
+    assert_receive {:io, message}
+    assert message =~ "[debug] Hello"
+    refute_receive {:io, _}
   end
 
   test "attach, detach, attach works", %{io: io} do
-    {:ok, _pid} = LoggerCircularBuffer.attach(io: io)
-    LoggerCircularBuffer.detach()
-    {:ok, _pid} = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.detach()
+    :ok = LoggerCircularBuffer.attach(io: io)
   end
 
   test "output is not duplicated on group leader", %{io: io} do
-    LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
 
     output =
       capture_log(fn ->
@@ -54,7 +58,7 @@ defmodule LoggerCircularBufferTest do
   end
 
   test "can receive multiple messages", %{io: io} do
-    {:ok, _} = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Hello")
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
@@ -64,7 +68,7 @@ defmodule LoggerCircularBufferTest do
   end
 
   test "can detach", %{io: io} do
-    {:ok, _} = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Hello")
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
@@ -74,7 +78,7 @@ defmodule LoggerCircularBufferTest do
   end
 
   test "can get buffer", %{io: io} do
-    {:ok, _} = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Hello")
     assert_receive {:io, message}
     {:ok, buffer} = LoggerCircularBuffer.get()
@@ -83,7 +87,7 @@ defmodule LoggerCircularBufferTest do
     formatted_message =
       buffer
       |> List.first()
-      |> LoggerCircularBuffer.format_message()
+      |> LoggerCircularBuffer.format()
       |> IO.iodata_to_binary()
 
     assert formatted_message == message
@@ -91,7 +95,7 @@ defmodule LoggerCircularBufferTest do
 
   test "buffer does not exceed size", %{io: io} do
     Logger.configure_backend(LoggerCircularBuffer, buffer_size: 2)
-    {:ok, _} = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
 
     Logger.debug("Foo")
     assert_receive {:io, _message}
@@ -111,7 +115,7 @@ defmodule LoggerCircularBufferTest do
 
   test "buffer can be fetched by range", %{io: io} do
     Logger.configure_backend(LoggerCircularBuffer, buffer_size: 3)
-    {:ok, _} = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Foo")
     assert_receive {:io, _message}
     Logger.debug("Bar")
@@ -126,7 +130,7 @@ defmodule LoggerCircularBufferTest do
 
   test "buffer start index is less then buffer_start_index", %{io: io} do
     Logger.configure_backend(LoggerCircularBuffer, buffer_size: 1)
-    {:ok, _} = LoggerCircularBuffer.attach(io: io)
+    :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Foo")
     assert_receive {:io, _message}
     Logger.debug("Bar")
@@ -140,7 +144,7 @@ defmodule LoggerCircularBufferTest do
   end
 
   test "can format messages", %{io: io} do
-    {:ok, _} =
+    :ok =
       LoggerCircularBuffer.attach(io: io, format: "$metadata$message", metadata: [:index])
 
     Logger.debug("Hello")

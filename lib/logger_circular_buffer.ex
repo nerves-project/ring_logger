@@ -1,7 +1,7 @@
 defmodule LoggerCircularBuffer do
   @behaviour :gen_event
 
-  alias LoggerCircularBuffer.{Server, Client}
+  alias LoggerCircularBuffer.{Server, Autoclient}
 
   @typedoc "Option values used by `attach`"
   @type attach_option ::
@@ -29,21 +29,21 @@ defmodule LoggerCircularBuffer do
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string
   """
-  @spec attach([attach_option]) :: {:ok, pid} | {:error, {:already_started, pid}}
-  defdelegate attach(opts \\ []), to: Client
+  @spec attach([attach_option]) :: :ok
+  defdelegate attach(opts \\ []), to: Autoclient
 
   @doc """
   Detach the current IEx session from the logger.
   """
   @spec detach() :: :ok
-  defdelegate detach(), to: Client
+  defdelegate detach(), to: Autoclient
 
   @doc """
   Helper method for formatting log messages per the current client's
   configuration.
   """
-  @spec format_message(entry()) :: :ok
-  defdelegate format_message(message), to: Client
+  @spec format(entry()) :: :ok
+  defdelegate format(message), to: Autoclient
 
   @doc """
   Get all log messages at the specified index and later.

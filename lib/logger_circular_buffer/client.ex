@@ -18,42 +18,27 @@ defmodule LoggerCircularBuffer.Client do
   end
 
   @doc """
-  Convenience version of attach for IEx use. This one
-  looks up the
   """
-  #def attach(config \\ []) when is_list(config) do
-  #end
 
-  def attach(config \\ []) do
-    case Process.get(:logger_circular_buffer_client) do
-      nil ->
-        {:ok, client_pid} = start_link(config)
-        Process.put(:logger_circular_buffer_client, client_pid)
-        {:ok, client_pid}
-
-      client_pid ->
-        {:error, {:already_started, client_pid}}
-    end
+  @spec attach(Genserver.server()) :: :ok
+  def attach(client_pid) do
+    GenServer.call(client_pid, :attach)
   end
 
-  @spec detach() :: :ok
-  def detach() do
-    client_pid = Process.delete(:logger_circular_buffer_client)
-
-    if client_pid do
-      stop(client_pid)
-    end
+  @spec detach(Genserver.server()) :: :ok
+  def detach(client_pid) do
+    GenServer.call(client_pid, :detach)
   end
 
-  def tail() do
-    client_pid = Process.get(:logger_circular_buffer_client)
-    unless client_pid, do: raise(RuntimeError, message: "attach first")
+  def tail(client_pid) do
     GenServer.call(client_pid, :tail)
   end
 
-  def format_message(message) do
-    client_pid = Process.get(:logger_circular_buffer_client)
-    unless client_pid, do: raise(RuntimeError, message: "attach first")
+  def reset(client_pid) do
+    GenServer.call(client_pid, :reset)
+  end
+
+  def format(client_pid, message) do
     GenServer.call(client_pid, {:format, message})
   end
 
@@ -79,6 +64,16 @@ defmodule LoggerCircularBuffer.Client do
     end
 
     {:noreply, state}
+  end
+
+  def handle_call(:attach, _from, state) do
+    Server.attach_client(self())
+    {:reply, :ok, state}
+  end
+
+  def handle_call(:detach, _from, state) do
+    Server.detach_client(self())
+    {:reply, :ok, state}
   end
 
   def handle_call(:tail, _from, state) do
