@@ -4,8 +4,9 @@
 [![Hex version](https://img.shields.io/hexpm/v/logger_circular_buffer.svg "Hex version")](https://hex.pm/packages/logger_circular_buffer)
 
 This is a circular buffer backend for the [Elixir
-Logger](https://hexdocs.pm/logger/Logger.html) with support for polling logs and
-streaming them to IEx sessions both local and remote.
+Logger](https://hexdocs.pm/logger/Logger.html) for use in environments where
+saving logs to disk or forwarding them over the network are not desired. It also
+has convenience methods for interacting with the log from the IEx prompt.
 
 ## Configuration
 
@@ -38,28 +39,66 @@ Logger.add_backend(LoggerCircularBuffer)
 Logger.configure(LoggerCircularBuffer, max_size: 100)
 ```
 
-## Usage
+## IEx session usage
 
-To see log messages as they come in, call `attach/0` to have them sent to your
-current IEx session. This works in a similar way to the `:console` logger but
-with the added bonus of working on remote IEx shells as well.
+See the example project for a hands-on walkthrough of using the logger. Read on
+for the highlights.
+
+Log messages aren't printed to the console by default. If you're seeing them,
+they may be coming from Elixir's default `:console` logger.
+
+To see log messages as they come in, call `LoggerCircularBuffer.attach()` and
+then to make the log messages stop, call `LoggerCircularBuffer.detach()`. The
+`attach` method takes options if you want to limit the log level, change the
+formatting, etc.
+
+Here's an example:
 
 ```elixir
-iex(node2@127.0.0.1)> LoggerCircularBuffer.attach
+iex> Logger.add_backend(LoggerCircularBuffer)
+{:ok, #PID<0.199.0>}
+iex> Logger.remove_backend(:console)
+:ok
+iex> LoggerCircularBuffer.attach
+:ok
+iex> require Logger
+iex> Logger.info("hello")
+:ok
+
+14:04:52.516 [info]  hello
 ```
 
-When you've had enough, call `detach/0`:
+This probably isn't too exciting until you see that it works on remote shells as
+well (the `:console` logger doesn't do this).
+
+Say you prefer polling for log messages rather than having them print over your
+console at random times. If you're still attached, then `detach` and `tail`:
 
 ```elixir
-iex(node2@127.0.0.1)> LoggerCircularBuffer.detach
+iex> LoggerCircularBuffer.detach
+:ok
+iex> Logger.info("Hello logger, how are you?")
+:ok
+iex> Logger.info("It's a nice day. Wouldn't you say?")
+:ok
+iex> LoggerCircularBuffer.tail
+
+14:04:52.516 [info]  hello
+
+14:11:54.397 [info]  Hello logger, how are you?
+
+14:12:09.180 [info]  It's a nice day. Wouldn't you say?
+:ok
 ```
 
-Other times, it's useful to get the logs programmatically. For example, if
-circumstances don't permit sending logs continuously to a remote server for
-review, but you'd like to send a snapshot when a notable event happens:
+## Programmatic usage
+
+It can be useful to get a snapshot of the log when an unexpected event occurs.
+The commandline functions demonstrated above are available, but you can also get
+the raw log entries by calling `LoggerCircularBuffer.get/0`:
 
 ```elixir
-iex(node2@127.0.0.1)> LoggerCircularBuffer.get
+iex> LoggerCircularBuffer.get
 [
   debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
    [
@@ -67,7 +106,7 @@ iex(node2@127.0.0.1)> LoggerCircularBuffer.get
      application: :example,
      module: Example,
      function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
+     file: "logger_circular_buffer/example/lib/example.ex",
      line: 11
    ]},
   debug: {Logger, "9", {{2018, 2, 5}, {17, 44, 8, 676}},
@@ -76,7 +115,7 @@ iex(node2@127.0.0.1)> LoggerCircularBuffer.get
      application: :example,
      module: Example,
      function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
+     file: "logger_circular_buffer/example/lib/example.ex",
      line: 11
    ]},
   debug: {Logger, "10", {{2018, 2, 5}, {17, 44, 9, 677}},
@@ -85,64 +124,8 @@ iex(node2@127.0.0.1)> LoggerCircularBuffer.get
      application: :example,
      module: Example,
      function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
+     file: "logger_circular_buffer/example/lib/example.ex",
      line: 11
    ]}
 ]
-```
-
-Formatting is nice. You can apply formatting like this:
-
-```elixir
-iex> config = LoggerCircularBuffer.Config.init(colors: [enabled: false])
-%LoggerCircularBuffer.Config{
-  colors: %{
-    debug: :cyan,
-    enabled: true,
-    error: :red,
-    info: :normal,
-    warn: :yellow
-  },
-  format: ["\n", :time, " ", :metadata, "[", :level, "] ", :levelpad, :message,
-   "\n"],
-  io: :stdio,
-  metadata: []
-}
-iex> {:ok, buffer} = LoggerCircularBuffer.get
-[
-  debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
-   [
-     index: 8,
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]},
-  debug: {Logger, "9", {{2018, 2, 5}, {17, 44, 8, 676}},
-   [
-     index: 9,
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]},
-  debug: {Logger, "10", {{2018, 2, 5}, {17, 44, 9, 677}},
-   [
-     index: 10,
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]}
-]
-iex> Enum.map(buffer, & LoggerCircularBuffer.Client.format_message(&1, config)) |> Enum.map(&IO.iodata_to_binary/1)
-["\n17:51:56.680 [debug] 8\n",
- "\n17:51:57.681 [debug] 9\n",
- "\n17:51:58.682 [debug] 10\n"]
 ```
