@@ -4,17 +4,14 @@ defmodule LoggerCircularBuffer do
   alias LoggerCircularBuffer.{Server, Autoclient}
 
   @typedoc "Option values used by `attach`"
-  @type attach_option ::
+  @type client_option ::
           {:io, term}
           | {:color, term}
           | {:metadata, Logger.metadata()}
           | {:format, String.t()}
+          | {:level, Logger.level()}
 
-  @type entry ::
-          { module(), Logger.level(),
-          Logger.message(),
-          Logger.Formatter.time(),
-          keyword()}
+  @type entry :: {module(), Logger.level(), Logger.message(), Logger.Formatter.time(), keyword()}
 
   #
   # API
@@ -28,8 +25,9 @@ defmodule LoggerCircularBuffer do
   * `:colors` -
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string
+  * `:level` - The minimum log level to report.
   """
-  @spec attach([attach_option]) :: :ok
+  @spec attach([client_option]) :: :ok
   defdelegate attach(opts \\ []), to: Autoclient
 
   @doc """
@@ -37,6 +35,18 @@ defmodule LoggerCircularBuffer do
   """
   @spec detach() :: :ok
   defdelegate detach(), to: Autoclient
+
+  @doc """
+  Tail the messages in the log.
+  """
+  @spec tail([client_option]) :: [String.t()]
+  defdelegate tail(opts \\ []), to: Autoclient
+
+  @doc """
+  Reset the index into the log for `tail/1` to the oldest entry.
+  """
+  @spec reset([client_option]) :: [String.t()]
+  defdelegate reset(opts \\ []), to: Autoclient
 
   @doc """
   Helper method for formatting log messages per the current client's

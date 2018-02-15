@@ -36,6 +36,7 @@ defmodule LoggerCircularBuffer.Server do
     GenServer.call(__MODULE__, {:detach, client_pid})
   end
 
+  @spec get(non_neg_integer()) :: [LoggerCircularBuffer.entry()]
   def get(start_index \\ 0) do
     GenServer.call(__MODULE__, {:get, start_index})
   end
@@ -70,15 +71,14 @@ defmodule LoggerCircularBuffer.Server do
     resp =
       cond do
         start_index <= state.buffer_start_index ->
-          {:ok, :queue.to_list(state.buffer)}
+          :queue.to_list(state.buffer)
 
         start_index > state.buffer_end_index ->
-          {:error,
-           "Out of buffer index range #{state.buffer_start_index}..#{state.buffer_end_index}"}
+          []
 
         true ->
           {_, buffer_range} = :queue.split(start_index - state.buffer_start_index, state.buffer)
-          {:ok, :queue.to_list(buffer_range)}
+          :queue.to_list(buffer_range)
       end
 
     {:reply, resp, state}
@@ -113,6 +113,7 @@ defmodule LoggerCircularBuffer.Server do
 
         remaining_clients = List.keydelete(state.clients, client_pid, 0)
         %{state | clients: remaining_clients}
+
       nil ->
         state
     end

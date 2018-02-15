@@ -31,8 +31,8 @@ defmodule LoggerCircularBuffer.Autoclient do
     Client.tail(maybe_create_client(config))
   end
 
-  def reset() do
-    Client.reset(maybe_create_client())
+  def reset(config \\ []) do
+    Client.reset(maybe_create_client(config))
   end
 
   def format(message) do

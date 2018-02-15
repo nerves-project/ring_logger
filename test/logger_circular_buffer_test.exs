@@ -77,11 +77,41 @@ defmodule LoggerCircularBufferTest do
     refute_receive {:io, _}
   end
 
+  test "can tail the log", %{io: io} do
+    Logger.debug("Hello")
+    :ok = LoggerCircularBuffer.tail(io: io)
+    assert_receive {:io, message}
+    assert message =~ "[debug] Hello"
+
+    Logger.debug("Foo")
+    Logger.debug("Bar")
+    :ok = LoggerCircularBuffer.tail()
+    assert_receive {:io, message1}
+    assert_receive {:io, message2}
+    IO.inspect(message1)
+    IO.inspect(message2)
+
+    assert message1 =~ "[debug] Foo"
+    assert message2 =~ "[debug] Bar"
+  end
+
+  test "can reset to the beginning", %{io: io} do
+    Logger.debug("Hello")
+    :ok = LoggerCircularBuffer.tail(io: io)
+    assert_receive {:io, message}
+    assert message =~ "[debug] Hello"
+
+    :ok = LoggerCircularBuffer.reset()
+    :ok = LoggerCircularBuffer.tail()
+    assert_receive {:io, message}
+    assert message =~ "[debug] Hello"
+  end
+
   test "can get buffer", %{io: io} do
     :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Hello")
     assert_receive {:io, message}
-    {:ok, buffer} = LoggerCircularBuffer.get()
+    buffer = LoggerCircularBuffer.get()
     assert [{:debug, {Logger, "Hello", _, _}}] = buffer
 
     formatted_message =
@@ -99,17 +129,17 @@ defmodule LoggerCircularBufferTest do
 
     Logger.debug("Foo")
     assert_receive {:io, _message}
-    {:ok, buffer} = LoggerCircularBuffer.get()
+    buffer = LoggerCircularBuffer.get()
     assert [{:debug, {Logger, "Foo", _, _}}] = buffer
 
     Logger.debug("Bar")
     assert_receive {:io, _message}
-    {:ok, buffer} = LoggerCircularBuffer.get()
+    buffer = LoggerCircularBuffer.get()
     assert [{:debug, {Logger, "Foo", _, _}}, {:debug, {Logger, "Bar", _, _}}] = buffer
 
     Logger.debug("Baz")
     assert_receive {:io, _message}
-    {:ok, buffer} = LoggerCircularBuffer.get()
+    buffer = LoggerCircularBuffer.get()
     assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
 
@@ -122,9 +152,9 @@ defmodule LoggerCircularBufferTest do
     assert_receive {:io, _message}
     Logger.debug("Baz")
     assert_receive {:io, _message}
-    {:ok, buffer} = LoggerCircularBuffer.get(2)
+    buffer = LoggerCircularBuffer.get(2)
     assert [{:debug, {Logger, "Baz", _, _}}] = buffer
-    {:ok, buffer} = LoggerCircularBuffer.get(1)
+    buffer = LoggerCircularBuffer.get(1)
     assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
 
@@ -135,17 +165,16 @@ defmodule LoggerCircularBufferTest do
     assert_receive {:io, _message}
     Logger.debug("Bar")
     assert_receive {:io, _message}
-    {:ok, buffer} = LoggerCircularBuffer.get(0)
+    buffer = LoggerCircularBuffer.get(0)
     assert [{:debug, {Logger, "Bar", _, _}}] = buffer
   end
 
-  test "receive an error when fetching buffer out of range" do
-    assert {:error, _} = LoggerCircularBuffer.get(100)
+  test "receive nothing when fetching buffer out of range" do
+    assert [] = LoggerCircularBuffer.get(100)
   end
 
   test "can format messages", %{io: io} do
-    :ok =
-      LoggerCircularBuffer.attach(io: io, format: "$metadata$message", metadata: [:index])
+    :ok = LoggerCircularBuffer.attach(io: io, format: "$metadata$message", metadata: [:index])
 
     Logger.debug("Hello")
     assert_receive {:io, message}

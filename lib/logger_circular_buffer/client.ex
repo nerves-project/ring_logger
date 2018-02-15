@@ -7,7 +7,8 @@ defmodule LoggerCircularBuffer.Client do
             colors: nil,
             metadata: nil,
             format: nil,
-            level: nil
+            level: nil,
+            index: 0
 
   def start_link(config \\ []) do
     GenServer.start_link(__MODULE__, config)
@@ -56,13 +57,8 @@ defmodule LoggerCircularBuffer.Client do
     {:ok, state}
   end
 
-  def handle_info({:log, {level, _} = msg}, state) do
-    if meet_level?(level, state.level) do
-      item = format_message(msg, state)
-
-      IO.binwrite(state.io, item)
-    end
-
+  def handle_info({:log, msg}, state) do
+    maybe_print(msg, state)
     {:noreply, state}
   end
 
@@ -77,13 +73,30 @@ defmodule LoggerCircularBuffer.Client do
   end
 
   def handle_call(:tail, _from, state) do
-    {:reply, [], state}
+    messages = Server.get(state.index)
+
+    case List.last(messages) do
+      nil ->
+        # No messages
+        {:reply, :ok, state}
+
+      last_message ->
+        Enum.each(messages, fn msg -> maybe_print(msg, state) end)
+        next_index = message_index(last_message) + 1
+        {:reply, :ok, %{state | index: next_index}}
+    end
+  end
+
+  def handle_call(:reset, _from, state) do
+    {:reply, :ok, %{state | index: 0}}
   end
 
   def handle_call({:format, msg}, _from, state) do
     item = format_message(msg, state)
     {:reply, item, state}
   end
+
+  defp message_index({_level, {_, _msg, _ts, md}}), do: Keyword.get(md, :index)
 
   defp format_message({level, {_, msg, ts, md}}, state) do
     metadata = take_metadata(md, state.metadata)
@@ -110,11 +123,13 @@ defmodule LoggerCircularBuffer.Client do
   end
 
   defp meet_level?(_lvl, nil), do: true
+
   defp meet_level?(lvl, min) do
     Logger.compare_levels(lvl, min) != :lt
   end
 
   defp take_metadata(metadata, :all), do: metadata
+
   defp take_metadata(metadata, keys) do
     Enum.reduce(keys, [], fn key, acc ->
       case Keyword.fetch(metadata, key) do
@@ -125,8 +140,17 @@ defmodule LoggerCircularBuffer.Client do
   end
 
   defp color_event(data, _level, %{enabled: false}, _md), do: data
+
   defp color_event(data, level, %{enabled: true} = colors, md) do
     color = md[:ansi_color] || Map.fetch!(colors, level)
     [IO.ANSI.format_fragment(color, true), data | IO.ANSI.reset()]
+  end
+
+  defp maybe_print({level, _} = msg, state) do
+    if meet_level?(level, state.level) do
+      item = format_message(msg, state)
+
+      IO.binwrite(state.io, item)
+    end
   end
 end
