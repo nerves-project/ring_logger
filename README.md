@@ -28,14 +28,14 @@ use Mix.Config
 config :logger, backends: [LoggerCircularBuffer]
 
 # Set the number of messages to hold in the circular buffer
-config :logger, LoggerCircularBuffer, buffer_size: 100
+config :logger, LoggerCircularBuffer, max_size: 100
 ```
 
 Or you can start the backend manually by running the following:
 
 ```elixir
 Logger.add_backend(LoggerCircularBuffer)
-Logger.configure(LoggerCircularBuffer, buffer_size: 100)
+Logger.configure(LoggerCircularBuffer, max_size: 100)
 ```
 
 ## Usage

@@ -131,8 +131,7 @@ defmodule LoggerCircularBuffer.Server do
        when size > max_size do
     trim = max_size - size
 
-    buffer =
-      Enum.reduce(1..trim, buffer, fn(_, buf) -> :queue.drop(buf) end)
+    buffer = Enum.reduce(1..trim, buffer, fn _, buf -> :queue.drop(buf) end)
 
     %{state | buffer: buffer, size: size}
   end

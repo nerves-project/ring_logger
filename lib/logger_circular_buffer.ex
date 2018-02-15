@@ -65,7 +65,7 @@ defmodule LoggerCircularBuffer do
   Update the logger configuration.
 
   Options include:
-  * `:buffer_size` - the number of log messages to store at a time
+  * `:max_size` - the max number of log messages to store at a time
   """
   defdelegate configure(opts), to: Server
 

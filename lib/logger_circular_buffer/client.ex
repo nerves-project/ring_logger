@@ -21,12 +21,12 @@ defmodule LoggerCircularBuffer.Client do
   @doc """
   """
 
-  @spec attach(Genserver.server()) :: :ok
+  @spec attach(GenServer.server()) :: :ok
   def attach(client_pid) do
     GenServer.call(client_pid, :attach)
   end
 
-  @spec detach(Genserver.server()) :: :ok
+  @spec detach(GenServer.server()) :: :ok
   def detach(client_pid) do
     GenServer.call(client_pid, :detach)
   end
@@ -70,6 +70,7 @@ defmodule LoggerCircularBuffer.Client do
 
   def handle_call(:tail, _from, state) do
     messages = Server.get(state.index)
+
     case List.last(messages) do
       nil ->
         # No messages
