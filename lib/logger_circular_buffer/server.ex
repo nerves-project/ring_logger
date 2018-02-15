@@ -3,17 +3,16 @@ defmodule LoggerCircularBuffer.Server do
 
   alias LoggerCircularBuffer.Client
 
-  @buffer_size 100
-  @opts [:buffer_size]
+  @opts [:max_size]
 
   defmodule State do
+    @default_max_size 100
+
     defstruct clients: [],
-              buffer: [],
-              buffer_actual_size: 0,
-              buffer_size: nil,
-              buffer_start_index: 0,
-              buffer_end_index: 0,
-              config: nil
+              buffer: :queue.new(),
+              size: 0,
+              max_size: @default_max_size,
+              index: 0
   end
 
   def start_link(opts \\ []) do
@@ -46,13 +45,7 @@ defmodule LoggerCircularBuffer.Server do
   end
 
   def init(opts) do
-    state = %State{
-      clients: [],
-      buffer: :queue.new(),
-      buffer_size: @buffer_size
-    }
-
-    {:ok, merge_opts(opts, state)}
+    {:ok, merge_opts(opts, %State{})}
   end
 
   def handle_call({:configure, opts}, _from, state) do
@@ -70,14 +63,14 @@ defmodule LoggerCircularBuffer.Server do
   def handle_call({:get, start_index}, _from, state) do
     resp =
       cond do
-        start_index <= state.buffer_start_index ->
+        start_index <= state.index ->
           :queue.to_list(state.buffer)
 
-        start_index > state.buffer_end_index ->
+        start_index >= state.index + state.size ->
           []
 
         true ->
-          {_, buffer_range} = :queue.split(start_index - state.buffer_start_index, state.buffer)
+          {_, buffer_range} = :queue.split(start_index - state.index, state.buffer)
           :queue.to_list(buffer_range)
       end
 
@@ -134,35 +127,32 @@ defmodule LoggerCircularBuffer.Server do
     |> trim
   end
 
-  defp trim(%{buffer_size: size, buffer_actual_size: actual, buffer: buffer} = state)
-       when actual >= size do
-    trim = actual - size
+  defp trim(%{max_size: max_size, size: size, buffer: buffer} = state)
+       when size > max_size do
+    trim = max_size - size
 
     buffer =
-      Enum.reduce(1..trim, buffer, fn _, buffer ->
-        {_, buffer} = :queue.out(buffer)
-        buffer
-      end)
+      Enum.reduce(1..trim, buffer, fn(_, buf) -> :queue.drop(buf) end)
 
-    %{state | buffer: buffer, buffer_actual_size: size}
+    %{state | buffer: buffer, size: size}
   end
 
   defp trim(state), do: state
 
   defp push({level, {mod, msg, ts, md}}, state) do
-    index = state.buffer_end_index + 1
+    index = state.index + state.size
     msg = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
 
     state =
-      if state.buffer_size == state.buffer_actual_size do
-        {_, buffer} = :queue.out(state.buffer)
-        %{state | buffer: buffer, buffer_start_index: state.buffer_start_index + 1}
+      if state.size == state.max_size do
+        buffer = :queue.drop(state.buffer)
+        %{state | buffer: buffer, index: state.index + 1}
       else
-        %{state | buffer_actual_size: state.buffer_actual_size + 1}
+        %{state | size: state.size + 1}
       end
 
     Enum.each(state.clients, &send_log(&1, msg))
-    %{state | buffer: :queue.in(msg, state.buffer), buffer_end_index: index}
+    %{state | buffer: :queue.in(msg, state.buffer)}
   end
 
   defp send_log({client_pid, _ref}, msg) do

@@ -14,7 +14,7 @@ defmodule LoggerCircularBufferTest do
     Logger.flush()
 
     Logger.add_backend(LoggerCircularBuffer)
-    Logger.configure_backend(LoggerCircularBuffer, buffer_size: 10)
+    Logger.configure_backend(LoggerCircularBuffer, max_size: 10)
 
     on_exit(fn ->
       LoggerCircularBuffer.TestIO.stop(pid)
@@ -88,8 +88,6 @@ defmodule LoggerCircularBufferTest do
     :ok = LoggerCircularBuffer.tail()
     assert_receive {:io, message1}
     assert_receive {:io, message2}
-    IO.inspect(message1)
-    IO.inspect(message2)
 
     assert message1 =~ "[debug] Foo"
     assert message2 =~ "[debug] Bar"
@@ -124,7 +122,7 @@ defmodule LoggerCircularBufferTest do
   end
 
   test "buffer does not exceed size", %{io: io} do
-    Logger.configure_backend(LoggerCircularBuffer, buffer_size: 2)
+    Logger.configure_backend(LoggerCircularBuffer, max_size: 2)
     :ok = LoggerCircularBuffer.attach(io: io)
 
     Logger.debug("Foo")
@@ -144,7 +142,7 @@ defmodule LoggerCircularBufferTest do
   end
 
   test "buffer can be fetched by range", %{io: io} do
-    Logger.configure_backend(LoggerCircularBuffer, buffer_size: 3)
+    Logger.configure_backend(LoggerCircularBuffer, max_size: 3)
     :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Foo")
     assert_receive {:io, _message}
@@ -159,7 +157,7 @@ defmodule LoggerCircularBufferTest do
   end
 
   test "buffer start index is less then buffer_start_index", %{io: io} do
-    Logger.configure_backend(LoggerCircularBuffer, buffer_size: 1)
+    Logger.configure_backend(LoggerCircularBuffer, max_size: 1)
     :ok = LoggerCircularBuffer.attach(io: io)
     Logger.debug("Foo")
     assert_receive {:io, _message}
@@ -178,10 +176,10 @@ defmodule LoggerCircularBufferTest do
 
     Logger.debug("Hello")
     assert_receive {:io, message}
-    assert message =~ "index=1 Hello"
+    assert message =~ "index=0 Hello"
     Logger.debug("World")
     assert_receive {:io, message}
-    assert message =~ "index=2 World"
+    assert message =~ "index=1 World"
   end
 
   defp capture_log(fun) do

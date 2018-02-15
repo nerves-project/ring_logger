@@ -52,8 +52,6 @@ defmodule LoggerCircularBuffer.Client do
       level: Keyword.get(config, :level)
     }
 
-    :ok = Server.attach_client(self())
-
     {:ok, state}
   end
 
@@ -63,18 +61,15 @@ defmodule LoggerCircularBuffer.Client do
   end
 
   def handle_call(:attach, _from, state) do
-    Server.attach_client(self())
-    {:reply, :ok, state}
+    {:reply, Server.attach_client(self()), state}
   end
 
   def handle_call(:detach, _from, state) do
-    Server.detach_client(self())
-    {:reply, :ok, state}
+    {:reply, Server.detach_client(self()), state}
   end
 
   def handle_call(:tail, _from, state) do
     messages = Server.get(state.index)
-
     case List.last(messages) do
       nil ->
         # No messages
