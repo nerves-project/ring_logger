@@ -1,101 +1,52 @@
 # Example
 
-Start the example app:
+This example starts a process that repeatedly logs messages. You can run it
+normally (`iex -S mix`) or via a remote shell. Since this logger is more
+interesting for the remote access, we'll demo that:
+
+First, start the example application as `node1`:
 
 ```bash
-iex --name node1@127.0.0.1 -S mix
+iex --name node1@0.0.0.0 -S mix
 ```
 
-Create a remote connection in another terminal
+Create another terminal and remote shell into `node1`:
 
 ```bash
-iex --name node2@127.0.0.1 --remsh node1@127.0.0.1
+iex --name node2@0.0.0.0 --remsh node1@0.0.0.0
 ```
 
-Attach to the remote console logger:
+At this point, you should see `:console` logger messages scrolling by on
+`node1`. Your remote shell session on `node2` will be nice and quiet. In real
+use, you will probably consider disabling the `:console` logger, but it is
+informative for this example.
+
+Now, on `node2`, try attaching to the log:
 
 ```elixir
-iex(node2@127.0.0.1)> LoggerCircularBuffer.attach
+iex(node1@0.0.0.0)> LoggerCircularBuffer.attach
 ```
 
-Detach from the remote console logger:
+You should see log messages now. When you're tired of watching them, detach:
 
 ```elixir
-iex(node2@127.0.0.1)> LoggerCircularBuffer.detach
+iex(node1@0.0.0.0)> LoggerCircularBuffer.detach
 ```
 
-Get all of the log messages:
+If you're the type of person who prefers to poll their logs manually, you can do
+that too:
 
 ```elixir
-iex(node2@127.0.0.1)> LoggerCircularBuffer.get
-[
-  debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]},
-  debug: {Logger, "9", {{2018, 2, 5}, {17, 44, 8, 676}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]},
-  debug: {Logger, "10", {{2018, 2, 5}, {17, 44, 9, 677}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]}
-]
+iex(node1@0.0.0.0)5> LoggerCircularBuffer.tail
+
+12:48:43.142 [debug] 285
+
+12:48:44.143 [debug] 286
 ```
 
-Format the log:
+`LoggerCircularBuffer.tail` keeps track of your position in the log so only new
+messages get printed. If you create a new remote shell session, the position is
+reset. You can also call `LoggerCircularBuffer.reset` to reset the position
+manually. Keep in mind that logs are stored in a ring buffer, so as soon as the
+log hits the maximum configured length, old messages will be discarded.
 
-```elixir
-iex(node1@127.0.0.1)> {:ok, client} = LoggerCircularBuffer.attach
-# ...
-iex(node2@127.0.0.1)> buffer = LoggerCircularBuffer.get
-[
-  debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]},
-  debug: {Logger, "9", {{2018, 2, 5}, {17, 44, 8, 676}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]},
-  debug: {Logger, "10", {{2018, 2, 5}, {17, 44, 9, 677}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "/home/jschneck/dev/logger_circular_buffer/example/lib/example.ex",
-     line: 11
-   ]}
-]
-iex(node1@127.0.0.1)> Enum.map(buffer, & LoggerCircularBuffer.Client.format_message(&1, client.config))
-["\e[36m\n17:51:56.680 [debug] 8\n\e[0m",
- "\e[36m\n17:51:57.681 [debug] 9\n\e[0m",
- "\e[36m\n17:51:58.682 [debug] 10\n\e[0m"]
-```
