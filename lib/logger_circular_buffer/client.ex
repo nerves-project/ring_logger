@@ -20,7 +20,6 @@ defmodule LoggerCircularBuffer.Client do
 
   @doc """
   """
-
   @spec attach(GenServer.server()) :: :ok
   def attach(client_pid) do
     GenServer.call(client_pid, :attach)

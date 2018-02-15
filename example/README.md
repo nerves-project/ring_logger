@@ -67,4 +67,3 @@ messages get printed. If you create a new remote shell session, the position is
 reset. You can also call `LoggerCircularBuffer.reset` to reset the position
 manually. Keep in mind that logs are stored in a ring buffer, so as soon as the
 log hits the maximum configured length, old messages will be discarded.
-
