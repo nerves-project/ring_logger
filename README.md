@@ -15,7 +15,7 @@ First, add `ring_logger` to your projects dependencies in your
 
 ```elixir
   def deps do
-    [{:ring_logger, "~> 0.2.0"}]
+    [{:ring_logger, "~> 0.3.0"}]
   end
 ```
 
