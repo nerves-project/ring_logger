@@ -2,9 +2,11 @@ defmodule RingLogger.Autoclient do
   alias RingLogger.Client
 
   @moduledoc """
-  This is a helper module for RingLogger.Client that makes it easy to use at the IEx prompt by removing
-  the need to keep track of pids. Programs should normally call RingLogger.Client directly to avoid
-  many of the automatic behaviors that this module adds.
+  This is a helper module for `RingLogger.Client` that makes it easy to use at the IEx prompt by removing
+  the need to keep track of pids or start clients..
+
+  If you're a human, call these functions via `RingLogger.*`. If you're a program, call `RingLogger.Client.start_link/1` to
+  start you're own client and call it directly.
   """
 
   @doc """
@@ -67,7 +69,10 @@ defmodule RingLogger.Autoclient do
   defp check_server_started() do
     if !Process.whereis(RingLogger.Server) do
       IO.puts("""
-      The RingLogger backend isn't running. Please start it by adding the following to your config.exs:
+      The RingLogger backend isn't running. Going to try starting it, but don't
+      expect any log entries before now.
+
+      To start it in the future, add the following to your config.exs:
 
         config :logger, backends: [RingLogger]
 
@@ -75,12 +80,25 @@ defmodule RingLogger.Autoclient do
 
         iex> Logger.add_backend(RingLogger)
       """)
-
-      {:error, :not_started}
+      try_adding_backend()
     else
       :ok
     end
   end
+
+  defp try_adding_backend() do
+    case Logger.add_backend(RingLogger) do
+      {:ok, _} -> :ok
+      error ->
+        IO.puts("""
+
+        Error trying to start the logger. Check your configuration
+        and try again.
+
+        """)
+        error
+    end
+end
 
   defp maybe_create_client(config \\ []) do
     case get_client_pid() do
