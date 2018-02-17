@@ -3,7 +3,10 @@ defmodule RingLogger do
 
   alias RingLogger.{Server, Autoclient}
 
-  @typedoc "Option values used by `attach`"
+  @typedoc "Option values used by the ring logger"
+  @type server_option :: {:max_size, pos_integer()}
+
+  @typedoc "Option values used by client-side functions like `attach` and `tail`"
   @type client_option ::
           {:io, term}
           | {:color, term}
@@ -11,6 +14,7 @@ defmodule RingLogger do
           | {:format, String.t()}
           | {:level, Logger.level()}
 
+  @typedoc "A tuple holding a raw, unformatted log entry"
   @type entry :: {module(), Logger.level(), Logger.message(), Logger.Formatter.time(), keyword()}
 
   #
@@ -67,6 +71,7 @@ defmodule RingLogger do
   Options include:
   * `:max_size` - the max number of log messages to store at a time
   """
+  @spec configure([server_option]) :: :ok
   defdelegate configure(opts), to: Server
 
   #

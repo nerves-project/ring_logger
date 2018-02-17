@@ -6,6 +6,8 @@ defmodule RingLogger.Server do
   @opts [:max_size]
 
   defmodule State do
+    @moduledoc false
+
     @default_max_size 100
 
     defstruct clients: [],
