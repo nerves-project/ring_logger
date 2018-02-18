@@ -43,7 +43,7 @@ defmodule RingLogger do
   @doc """
   Tail the messages in the log.
   """
-  @spec tail([client_option]) :: [String.t()]
+  @spec tail([client_option]) :: :ok | {:error, term()}
   defdelegate tail(opts \\ []), to: Autoclient
 
   @doc """
@@ -51,6 +51,17 @@ defmodule RingLogger do
   """
   @spec reset([client_option]) :: :ok | {:error, term()}
   defdelegate reset(opts \\ []), to: Autoclient
+
+  @doc """
+  Run a regular expression on each entry in the log and print out the matchers.
+
+  For example:
+
+  iex> RingLogger.grep(~r/something/)
+  :ok
+  """
+  @spec grep(Regex.t(), [client_option]) :: :ok | {:error, term()}
+  defdelegate grep(regex, opts \\ []), to: Autoclient
 
   @doc """
   Helper method for formatting log messages per the current client's

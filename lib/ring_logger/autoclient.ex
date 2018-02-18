@@ -49,6 +49,15 @@ defmodule RingLogger.Autoclient do
   end
 
   @doc """
+  Run a regular expression on each entry in the log and print out the matchers.
+  """
+  def grep(regex, config \\ []) do
+    with :ok <- check_server_started(),
+         pid <- maybe_create_client(config),
+         do: Client.grep(pid, regex)
+  end
+
+  @doc """
   Reset the index used to keep track of the position in the log for `tail/1` so
   that the next call to `tail/1` starts back at the oldest entry.
   """

@@ -38,7 +38,7 @@ defmodule RingLogger.Client do
   * `:format` - A custom format string
   * `:level` - The minimum log level to report.
   """
-  @spec configure(GenServer.server(), [RingLogger.client_options()]) :: :ok
+  @spec configure(GenServer.server(), [RingLogger.client_option()]) :: :ok
   def configure(client_pid, config) do
     GenServer.call(client_pid, {:config, config})
   end
@@ -62,7 +62,7 @@ defmodule RingLogger.Client do
   @doc """
   Tail the messages in the log.
   """
-  @spec tail(GenServer.server()) :: [String.t()]
+  @spec tail(GenServer.server()) :: :ok
   def tail(client_pid) do
     GenServer.call(client_pid, :tail)
   end
@@ -82,6 +82,14 @@ defmodule RingLogger.Client do
   @spec format(GenServer.server(), RingLogger.entry()) :: :ok
   def format(client_pid, message) do
     GenServer.call(client_pid, {:format, message})
+  end
+
+  @doc """
+  Run a regular expression on each entry in the log and print out the matchers.
+  """
+  @spec grep(GenServer.server(), Regex.t()) :: :ok
+  def grep(client_pid, regex) do
+    GenServer.call(client_pid, {:grep, regex})
   end
 
   def init(config) do
@@ -135,6 +143,13 @@ defmodule RingLogger.Client do
 
   def handle_call(:reset, _from, state) do
     {:reply, :ok, %{state | index: 0}}
+  end
+
+  def handle_call({:grep, regex}, _from, state) do
+    Server.get()
+    |> Enum.each(fn msg -> maybe_print(msg, regex, state) end)
+
+    {:reply, :ok, state}
   end
 
   def handle_call({:format, msg}, _from, state) do
@@ -195,7 +210,13 @@ defmodule RingLogger.Client do
   defp maybe_print({level, _} = msg, state) do
     if meet_level?(level, state.level) do
       item = format_message(msg, state)
+      IO.binwrite(state.io, item)
+    end
+  end
 
+  defp maybe_print({level, {_, text, _, _}} = msg, r, state) do
+    if meet_level?(level, state.level) && Regex.match?(r, text) do
+      item = format_message(msg, state)
       IO.binwrite(state.io, item)
     end
   end
