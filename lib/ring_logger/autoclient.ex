@@ -33,6 +33,7 @@ defmodule RingLogger.Autoclient do
   """
   def forget() do
     client_pid = Process.delete(:ring_logger_client)
+
     if client_pid do
       Client.stop(client_pid)
     end
@@ -80,6 +81,7 @@ defmodule RingLogger.Autoclient do
 
         iex> Logger.add_backend(RingLogger)
       """)
+
       try_adding_backend()
     else
       :ok
@@ -88,7 +90,9 @@ defmodule RingLogger.Autoclient do
 
   defp try_adding_backend() do
     case Logger.add_backend(RingLogger) do
-      {:ok, _} -> :ok
+      {:ok, _} ->
+        :ok
+
       error ->
         IO.puts("""
 
@@ -96,9 +100,10 @@ defmodule RingLogger.Autoclient do
         and try again.
 
         """)
+
         error
     end
-end
+  end
 
   defp maybe_create_client(config \\ []) do
     case get_client_pid() do
@@ -108,6 +113,8 @@ end
         pid
 
       pid ->
+        # Update the configuration if the user changed something
+        Client.configure(pid, config)
         pid
     end
   end

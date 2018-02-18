@@ -49,7 +49,7 @@ defmodule RingLogger do
   @doc """
   Reset the index into the log for `tail/1` to the oldest entry.
   """
-  @spec reset([client_option]) :: [String.t()]
+  @spec reset([client_option]) :: :ok | {:error, term()}
   defdelegate reset(opts \\ []), to: Autoclient
 
   @doc """

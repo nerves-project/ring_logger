@@ -77,6 +77,15 @@ defmodule RingLoggerTest do
     refute_receive {:io, _}
   end
 
+  test "can filter based on log level", %{io: io} do
+    :ok = RingLogger.attach(io: io, level: :error)
+    Logger.debug("Hello")
+    refute_receive {:io, _message}
+    Logger.error("World")
+    assert_receive {:io, message}
+    assert message =~ "[error] World"
+  end
+
   test "can tail the log", %{io: io} do
     Logger.debug("Hello")
     :ok = RingLogger.tail(io: io)
