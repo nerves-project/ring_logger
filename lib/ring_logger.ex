@@ -1,6 +1,37 @@
 defmodule RingLogger do
   @behaviour :gen_event
 
+  @moduledoc """
+  This is an in-memory ring buffer backend for the Elixir Logger.
+
+  Install it by adding it to your `config.exs`:
+
+  ```elixir
+  use Mix.Config
+
+  # Add the RingLogger backend. This removes the
+  # default :console backend.
+  config :logger, backends: [RingLogger]
+
+  # Set the number of messages to hold in the circular buffer
+  config :logger, RingLogger, max_size: 100
+  ```
+
+  Or add manually:
+
+  ```elixir
+  Logger.add_backend(RingLogger)
+  Logger.configure(RingLogger, max_size: 100)
+  ```
+
+  Once added as a backend, you have two options depending on whether you're
+  accessing the `RingLogger` via the IEx prompt or via code.  If you're at the
+  IEx prompt, use the helper methods in here like `attach`, `detach`, `tail`,
+  `grep`, etc. They'll automate a few things behind the scenes. If you're
+  writing a program that needs to get log messages, use `get` or `start_link` a
+  `RingLogger.Client` and call its methods directly.
+  """
+
   alias RingLogger.{Server, Autoclient}
 
   @typedoc "Option values used by the ring logger"

@@ -2,11 +2,11 @@ defmodule RingLogger.Autoclient do
   alias RingLogger.Client
 
   @moduledoc """
-  This is a helper module for `RingLogger.Client` that makes it easy to use at the IEx prompt by removing
-  the need to keep track of pids or start clients..
+  Helper module for `RingLogger.Client` to simplify IEx use
 
-  If you're a human, call these functions via `RingLogger.*`. If you're a program, call `RingLogger.Client.start_link/1` to
-  start you're own client and call it directly.
+  If you're a human, call these functions via `RingLogger.*`. If you're a
+  program, call `RingLogger.Client.start_link/1` to start you're own client and
+  call it directly.
   """
 
   @doc """
