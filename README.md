@@ -3,15 +3,23 @@
 [![CircleCI](https://circleci.com/gh/nerves-project/ring_logger.svg?style=svg)](https://circleci.com/gh/nerves-project/ring_logger)
 [![Hex version](https://img.shields.io/hexpm/v/ring_logger.svg "Hex version")](https://hex.pm/packages/ring_logger)
 
-This is a circular buffer backend for the [Elixir
-Logger](https://hexdocs.pm/logger/Logger.html) for use in environments where
-saving logs to disk or forwarding them over the network are not desired. It also
-has convenience methods for interacting with the log from the IEx prompt.
+This is an in-memory ring buffer backend for the [Elixir
+Logger](https://hexdocs.pm/logger/Logger.html) with convenience methods for
+accessing the logs from the IEx prompt.
+
+Use cases:
+
+* Get log messages in real-time over remote IEx sessions
+* Grep and tail through log messages without setting up anything else
+* Keep logs in limited resource environments
+* Capture recent log events for error reports
+
+As a bonus, `ring_logger` is nice to your IEx prompt. If you attach to the log
+and are receiving messages as they're sent, they won't stomp what you're typing.
 
 ## Configuration
 
-First, add `ring_logger` to your projects dependencies in your
-`mix.exs`:
+Add `ring_logger` to your projects dependencies in your `mix.exs`:
 
 ```elixir
   def deps do
