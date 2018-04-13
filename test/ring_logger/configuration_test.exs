@@ -7,13 +7,11 @@ defmodule RingLogger.Configuration.Test do
       {:ok, subject: %{_: :info}}
     end
 
-    test "when the log level is exceded",
-    %{subject: subject} do
+    test "when the log level is exceded", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :warn)
     end
 
-    test "when the log level is not exceded",
-    %{subject: subject} do
+    test "when the log level is not exceded", %{subject: subject} do
       refute Subject.meet_level?(subject, TestModule, :debug)
     end
   end
@@ -23,8 +21,7 @@ defmodule RingLogger.Configuration.Test do
       {:ok, subject: %{module_levels: %{}}}
     end
 
-    test "all log levels are meet",
-    %{subject: subject} do
+    test "all log levels are meet", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :error)
       assert Subject.meet_level?(subject, TestModule, :warn)
       assert Subject.meet_level?(subject, TestModule, :info)
@@ -37,18 +34,15 @@ defmodule RingLogger.Configuration.Test do
       {:ok, subject: %{TestModule => :info, _: :warn}}
     end
 
-    test "when the log level is meet and the module is not",
-    %{subject: subject} do
+    test "when the log level is meet and the module is not", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :warn)
     end
 
-    test "when the log level and the module level are exceded",
-    %{subject: subject} do
+    test "when the log level and the module level are exceded", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :info)
     end
 
-    test "when the log level and the module level are not exceded",
-    %{subject: subject} do
+    test "when the log level and the module level are not exceded", %{subject: subject} do
       refute Subject.meet_level?(subject, TestModule, :debug)
     end
   end
@@ -58,18 +52,15 @@ defmodule RingLogger.Configuration.Test do
       {:ok, subject: %{TeestModule => :warn, _: :info}}
     end
 
-    test "when the log level is not meet and the module is",
-    %{subject: subject} do
+    test "when the log level is not meet and the module is", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :warn)
     end
 
-    test "when the log level and the module level are exceded",
-    %{subject: subject} do
+    test "when the log level and the module level are exceded", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :error)
     end
 
-    test "when the log level and the module level are not exceded",
-    %{subject: subject} do
+    test "when the log level and the module level are not exceded", %{subject: subject} do
       refute Subject.meet_level?(subject, TestModule, :debug)
     end
   end
