@@ -219,7 +219,9 @@ defmodule RingLogger.Client do
   end
 
   defp maybe_print({level, {_, text, _, _}} = msg, r, state) do
-    if meet_level?(level, state.level) && Regex.match?(r, text) do
+    flattened_text = IO.iodata_to_binary(text)
+
+    if meet_level?(level, state.level) && Regex.match?(r, flattened_text) do
       item = format_message(msg, state)
       IO.binwrite(state.io, item)
     end
