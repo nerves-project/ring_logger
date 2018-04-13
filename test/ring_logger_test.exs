@@ -94,6 +94,14 @@ defmodule RingLoggerTest do
     assert message =~ "[debug] Hello"
   end
 
+  test "can grep iodata in log", %{io: io} do
+    Logger.debug(["Hello", ",", ' world'])
+    Logger.debug("World")
+    RingLogger.grep(~r/H..lo/, io: io)
+    assert_receive {:io, message}
+    assert message =~ "[debug] Hello, world"
+  end
+
   test "can tail the log", %{io: io} do
     Logger.debug("Hello")
     :ok = RingLogger.tail(io: io)
