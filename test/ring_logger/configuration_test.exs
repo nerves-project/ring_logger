@@ -7,11 +7,11 @@ defmodule RingLogger.Configuration.Test do
       {:ok, subject: %{_: :info}}
     end
 
-    test "when the log level is exceded", %{subject: subject} do
+    test "when the log level is exceeded", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :warn)
     end
 
-    test "when the log level is not exceded", %{subject: subject} do
+    test "when the log level is not exceeded", %{subject: subject} do
       refute Subject.meet_level?(subject, TestModule, :debug)
     end
   end
@@ -38,11 +38,11 @@ defmodule RingLogger.Configuration.Test do
       assert Subject.meet_level?(subject, TestModule, :warn)
     end
 
-    test "when the log level and the module level are exceded", %{subject: subject} do
+    test "when the log level and the module level are exceeded", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :info)
     end
 
-    test "when the log level and the module level are not exceded", %{subject: subject} do
+    test "when the log level and the module level are not exceeded", %{subject: subject} do
       refute Subject.meet_level?(subject, TestModule, :debug)
     end
   end
@@ -52,16 +52,16 @@ defmodule RingLogger.Configuration.Test do
       {:ok, subject: %{TestModule => :warn, _: :info}}
     end
 
-    test "when the log level is not meet and the module is", %{subject: subject} do
+    test "when the log level is not met and the module is", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :warn)
     end
 
-    test "when the log level and the module level are exceded", %{subject: subject} do
+    test "when the log level and the module level are exceeded", %{subject: subject} do
       assert Subject.meet_level?(subject, TestModule, :error)
     end
 
-    test "when the log level and the module level are not exceded", %{subject: subject} do
-      refute Subject.meet_level?(subject, TestModule, :debug)
+    test "when the log level is not exceeded and the module level matches", %{subject: subject} do
+      refute Subject.meet_level?(subject, TestModule, :info)
     end
   end
 end
