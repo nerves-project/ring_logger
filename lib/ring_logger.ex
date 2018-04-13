@@ -128,9 +128,10 @@ defmodule RingLogger do
   iex> RingLogger.level(:_, :debug)
   :ok
   """
-  def level(module,level) do
-    Logger.configure_backend(__MODULE__, module_levels: %{ module => level })
+  def level(module, level) do
+    Logger.configure_backend(__MODULE__, module_levels: %{module => level})
   end
+
   #
   # Logger backend callbacks
   #

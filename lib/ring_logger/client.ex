@@ -113,7 +113,7 @@ defmodule RingLogger.Client do
       metadata: Keyword.get(config, :metadata, []) |> configure_metadata(),
       format: Logger.Formatter.compile(Keyword.get(config, :format)),
       level: Keyword.get(config, :level, :debug),
-      location: Keyword.get(config, :location, false),
+      location: Keyword.get(config, :location, false)
     }
 
     {:ok, state}
@@ -177,11 +177,12 @@ defmodule RingLogger.Client do
   defp format_message({level, {_, msg, ts, md}}, state) do
     metadata = take_metadata(md, state.metadata)
 
-    msg = if state.location do
-            [module_function(md[:module],md[:function]), " : ", msg]
-          else
-            msg
-          end
+    msg =
+      if state.location do
+        [module_function(md[:module], md[:function]), " : ", msg]
+      else
+        msg
+      end
 
     state.format
     |> Logger.Formatter.format(level, msg, ts, metadata)
@@ -242,11 +243,11 @@ defmodule RingLogger.Client do
     end
   end
 
-  defp module_function(nil,_function) do
+  defp module_function(nil, _function) do
     ["iex"]
   end
 
-  defp module_function(module,function) do
+  defp module_function(module, function) do
     mod =
       case to_string(module) do
         "Elixir." <> mod -> mod
@@ -255,6 +256,6 @@ defmodule RingLogger.Client do
       end
 
     fx = to_string(function)
-    [mod,".",fx]
+    [mod, ".", fx]
   end
 end
