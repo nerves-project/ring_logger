@@ -2,7 +2,7 @@ defmodule RingLogger.Client do
   use GenServer
 
   @moduledoc """
-  #Interact with the RingLogger
+  Interact with the RingLogger
   """
 
   alias RingLogger.Server
