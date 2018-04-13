@@ -3,7 +3,7 @@ defmodule RingLogger.Server do
 
   alias RingLogger.Client
 
-  @opts [:max_size]
+  @opts [:max_size, :module_levels]
 
   defmodule State do
     @moduledoc false
@@ -14,7 +14,8 @@ defmodule RingLogger.Server do
               buffer: :queue.new(),
               size: 0,
               max_size: @default_max_size,
-              index: 0
+              index: 0,
+              module_levels: nil
   end
 
   def start_link(opts \\ []) do
@@ -42,8 +43,12 @@ defmodule RingLogger.Server do
     GenServer.call(__MODULE__, {:get, start_index})
   end
 
-  def log(msg) do
-    GenServer.cast(__MODULE__, {:log, msg})
+  def log({level, {Logger, _, _, md}} = msg, module_levels) do
+    module = md[:module]
+
+    if RingLogger.Configuration.meet_level?(module_levels, module, level) do
+      GenServer.cast(__MODULE__, {:log, msg})
+    end
   end
 
   def init(opts) do
@@ -51,7 +56,8 @@ defmodule RingLogger.Server do
   end
 
   def handle_call({:configure, opts}, _from, state) do
-    {:reply, :ok, merge_opts(opts, state)}
+    state = merge_opts(opts, state)
+    {:reply, state.module_levels, state}
   end
 
   def handle_call({:attach, client_pid}, _from, state) do
