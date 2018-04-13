@@ -116,6 +116,18 @@ defmodule RingLogger do
   @spec configure([server_option]) :: :ok
   defdelegate configure(opts), to: Server
 
+  @doc """
+  Update the Log level for the given module
+
+  Note that `:_` will change the default level all modules
+
+  For example, to make MyModule :warn, while defaulting to :debug:
+  iex> RingLogger.level(MyModule, :warn)
+  iex> RingLogger.level(:_, :debug)
+  """
+  def level(module,level) do
+    Logger.configure_backend(__MODULE__, module_levels: %{ module => level })
+  end
   #
   # Logger backend callbacks
   #
