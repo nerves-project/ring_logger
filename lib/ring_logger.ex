@@ -123,7 +123,10 @@ defmodule RingLogger do
 
   For example, to make MyModule :warn, while defaulting to :debug:
   iex> RingLogger.level(MyModule, :warn)
+  :ok
+
   iex> RingLogger.level(:_, :debug)
+  :ok
   """
   def level(module,level) do
     Logger.configure_backend(__MODULE__, module_levels: %{ module => level })
