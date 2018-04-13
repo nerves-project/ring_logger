@@ -2,7 +2,7 @@ defmodule RingLogger.Client do
   use GenServer
 
   @moduledoc """
-  Interact with the RingLogger
+  #Interact with the RingLogger
   """
 
   alias RingLogger.Server
@@ -42,7 +42,7 @@ defmodule RingLogger.Client do
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string
   * `:level` - The minimum log level to report.
-  * `:location` - Includ the module + function in message
+  * `:location` - Include the module + function in message
   """
   @spec configure(GenServer.server(), [RingLogger.client_option()]) :: :ok
   def configure(client_pid, config) do
