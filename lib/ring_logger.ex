@@ -120,7 +120,7 @@ defmodule RingLogger do
   # Logger backend callbacks
   #
   def init(__MODULE__) do
-    {:ok, init({__MODULE__, []})}
+    init({__MODULE__, []})
   end
 
   def init({__MODULE__, opts}) when is_list(opts) do
@@ -143,7 +143,7 @@ defmodule RingLogger do
   end
 
   def handle_event({level, _gl, {Logger, _, _, _} = msg}, state) do
-    Server.log({level, msg})
+    Server.log({level, msg}, state)
     {:ok, state}
   end
 
