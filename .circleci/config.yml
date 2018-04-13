@@ -10,5 +10,7 @@ jobs:
     steps:
       - checkout
       - run: mix local.hex --force && mix local.rebar --force
-      - run: mix deps.get --only test
+      - run: mix deps.get
       - run: mix test
+      - run: mix docs
+      - run: mix format --check-formatted
