@@ -49,7 +49,7 @@ defmodule RingLogger.Configuration.Test do
 
   describe "where the module is set lower than the log level" do
     setup do
-      {:ok, subject: %{TeestModule => :warn, _: :info}}
+      {:ok, subject: %{TestModule => :warn, _: :info}}
     end
 
     test "when the log level is not meet and the module is", %{subject: subject} do
