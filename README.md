@@ -99,6 +99,14 @@ iex> RingLogger.tail
 :ok
 ```
 
+You can also `grep`:
+
+```elixir
+iex> RingLogger.grep(~r/[Nn]eedle/)
+
+16:55:41.614 [info]  Needle in a haystack
+```
+
 ## Programmatic usage
 
 It can be useful to get a snapshot of the log when an unexpected event occurs.
