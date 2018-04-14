@@ -14,8 +14,7 @@ defmodule RingLogger.Client do
               metadata: nil,
               format: nil,
               level: nil,
-              index: 0,
-              location: false
+              index: 0
   end
 
   @doc """
@@ -42,7 +41,6 @@ defmodule RingLogger.Client do
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string
   * `:level` - The minimum log level to report.
-  * `:location` - Include the module + function in message
   """
   @spec configure(GenServer.server(), [RingLogger.client_option()]) :: :ok
   def configure(client_pid, config) do
@@ -99,21 +97,12 @@ defmodule RingLogger.Client do
   end
 
   def init(config) do
-    server_env = Application.get_env(:logger, RingLogger, [])
-    client_env = Application.get_env(:logger, __MODULE__, [])
-
-    config =
-      server_env
-      |> Keyword.merge(client_env)
-      |> Keyword.merge(config)
-
     state = %State{
       io: Keyword.get(config, :io, :stdio),
       colors: configure_colors(config),
       metadata: Keyword.get(config, :metadata, []) |> configure_metadata(),
       format: Logger.Formatter.compile(Keyword.get(config, :format)),
-      level: Keyword.get(config, :level, :debug),
-      location: Keyword.get(config, :location, false)
+      level: Keyword.get(config, :level, :debug)
     }
 
     {:ok, state}
@@ -177,13 +166,6 @@ defmodule RingLogger.Client do
   defp format_message({level, {_, msg, ts, md}}, state) do
     metadata = take_metadata(md, state.metadata)
 
-    msg =
-      if state.location do
-        [module_function(md[:module], md[:function]), " : ", msg]
-      else
-        msg
-      end
-
     state.format
     |> Logger.Formatter.format(level, msg, ts, metadata)
     |> color_event(level, state.colors, md)
@@ -241,21 +223,5 @@ defmodule RingLogger.Client do
       item = format_message(msg, state)
       IO.binwrite(state.io, item)
     end
-  end
-
-  defp module_function(nil, _function) do
-    ["iex"]
-  end
-
-  defp module_function(module, function) do
-    mod =
-      case to_string(module) do
-        "Elixir." <> mod -> mod
-        "nil" -> ""
-        binary -> binary
-      end
-
-    fx = to_string(function)
-    [mod, ".", fx]
   end
 end
