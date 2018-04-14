@@ -119,10 +119,12 @@ defmodule RingLogger do
   #
   # Logger backend callbacks
   #
+  @spec init(module()) :: {:ok, term()} | {:error, term()}
   def init(__MODULE__) do
-    {:ok, init({__MODULE__, []})}
+    init({__MODULE__, []})
   end
 
+  @spec init({module(), list()}) :: {:ok, term()} | {:error, term()}
   def init({__MODULE__, opts}) when is_list(opts) do
     env = Application.get_env(:logger, __MODULE__, [])
     opts = Keyword.merge(env, opts)
