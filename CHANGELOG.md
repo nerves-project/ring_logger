@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.1
+
+* Bug fixes
+  * Fix crash when `grep`'ing iodata
+  * Fix `init/1` callback return value when only specifying the module.
+
 ## v0.4.0
 
 * New features
