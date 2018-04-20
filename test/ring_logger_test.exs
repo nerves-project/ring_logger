@@ -31,6 +31,13 @@ defmodule RingLoggerTest do
     assert message =~ "[debug] Hello"
   end
 
+  test "show location", %{io: io} do
+    :ok = RingLogger.attach(io: io, location: true)
+    Logger.debug("Hello")
+    assert_receive {:io, message}
+    assert message =~ "[debug] RingLoggerTest.test show location/1: Hello"
+  end
+
   test "attaching twice doesn't duplicate messages", %{io: io} do
     :ok = RingLogger.attach(io: io)
     :ok = RingLogger.attach(io: io)

@@ -58,7 +58,7 @@ they may be coming from Elixir's default `:console` logger.
 To see log messages as they come in, call `RingLogger.attach()` and
 then to make the log messages stop, call `RingLogger.detach()`. The
 `attach` method takes options if you want to limit the log level, change the
-formatting, etc.
+formatting, etc. The options are documented in `RingLogger.Client`
 
 Here's an example:
 

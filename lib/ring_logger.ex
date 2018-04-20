@@ -61,6 +61,7 @@ defmodule RingLogger do
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string
   * `:level` - The minimum log level to report.
+  * `:location` - Include the module + function in message
   """
   @spec attach([client_option]) :: :ok
   defdelegate attach(opts \\ []), to: Autoclient
