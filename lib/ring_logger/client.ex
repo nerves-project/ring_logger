@@ -179,7 +179,7 @@ defmodule RingLogger.Client do
 
     msg =
       if state.location do
-        [module_function(md[:module], md[:function]), " : ", msg]
+        [module_function(md[:module], md[:function]), ": ", msg]
       else
         msg
       end
