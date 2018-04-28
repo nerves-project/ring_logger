@@ -39,7 +39,8 @@ defmodule RingLogger.Client do
   * `:io` - Defaults to `:stdio`
   * `:colors` -
   * `:metadata` - A KV list of additional metadata
-  * `:format` - A custom format string
+  * `:format` - A custom format string, or a {module, function} tuple (see
+    https://hexdocs.pm/logger/master/Logger.html#module-custom-formatting)
   * `:level` - The minimum log level to report.
   """
   @spec configure(GenServer.server(), [RingLogger.client_option()]) :: :ok
@@ -101,7 +102,7 @@ defmodule RingLogger.Client do
       io: Keyword.get(config, :io, :stdio),
       colors: configure_colors(config),
       metadata: Keyword.get(config, :metadata, []) |> configure_metadata(),
-      format: Logger.Formatter.compile(Keyword.get(config, :format)),
+      format: Keyword.get(config, :format) |> configure_formatter(),
       level: Keyword.get(config, :level, :debug)
     }
 
@@ -167,11 +168,20 @@ defmodule RingLogger.Client do
     metadata = take_metadata(md, state.metadata)
 
     state.format
-    |> Logger.Formatter.format(level, msg, ts, metadata)
+    |> apply_format(level, msg, ts, metadata)
     |> color_event(level, state.colors, md)
   end
 
   ## Helpers
+
+  defp apply_format({mod, fun}, level, msg, ts, metadata) do
+    apply(mod, fun, [level, msg, ts, metadata])
+  end
+
+  defp apply_format(format, level, msg, ts, metadata) do
+    Logger.Formatter.format(format, level, msg, ts, metadata)
+  end
+
   defp configure_metadata(:all), do: :all
   defp configure_metadata(metadata), do: Enum.reverse(metadata)
 
@@ -209,6 +219,12 @@ defmodule RingLogger.Client do
   defp color_event(data, level, %{enabled: true} = colors, md) do
     color = md[:ansi_color] || Map.fetch!(colors, level)
     [IO.ANSI.format_fragment(color, true), data | IO.ANSI.reset()]
+  end
+
+  defp configure_formatter({mod, fun}), do: {mod, fun}
+
+  defp configure_formatter(format) do
+    Logger.Formatter.compile(format)
   end
 
   defp maybe_print({level, _} = msg, state) do

@@ -4,6 +4,7 @@ defmodule RingLoggerTest do
 
   import ExUnit.CaptureIO
   require Logger
+  alias RingLogger.TestCustomFormatter
 
   setup do
     {:ok, pid} = RingLogger.TestIO.start(self())
@@ -198,6 +199,17 @@ defmodule RingLoggerTest do
 
   test "can format messages", %{io: io} do
     :ok = RingLogger.attach(io: io, format: "$metadata$message", metadata: [:index])
+
+    Logger.debug("Hello")
+    assert_receive {:io, message}
+    assert message =~ "index=0 Hello"
+    Logger.debug("World")
+    assert_receive {:io, message}
+    assert message =~ "index=1 World"
+  end
+
+  test "can use custom formatter", %{io: io} do
+    :ok = RingLogger.attach(io: io, format: {TestCustomFormatter, :format}, metadata: [:index])
 
     Logger.debug("Hello")
     assert_receive {:io, message}

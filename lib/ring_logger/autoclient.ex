@@ -5,7 +5,7 @@ defmodule RingLogger.Autoclient do
   Helper module for `RingLogger.Client` to simplify IEx use
 
   If you're a human, call these functions via `RingLogger.*`. If you're a
-  program, call `RingLogger.Client.start_link/1` to start you're own client and
+  program, call `RingLogger.Client.start_link/1` to start your own client and
   call it directly.
   """
 

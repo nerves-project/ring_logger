@@ -42,11 +42,13 @@ defmodule RingLogger do
           {:io, term}
           | {:color, term}
           | {:metadata, Logger.metadata()}
-          | {:format, String.t()}
+          | {:format, String.t() | custom_formatter}
           | {:level, Logger.level()}
 
   @typedoc "A tuple holding a raw, unformatted log entry"
   @type entry :: {module(), Logger.level(), Logger.message(), Logger.Formatter.time(), keyword()}
+
+  @typep custom_formatter :: {module, function}
 
   #
   # API
