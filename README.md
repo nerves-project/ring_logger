@@ -107,6 +107,45 @@ iex> RingLogger.grep(~r/[Nn]eedle/)
 16:55:41.614 [info]  Needle in a haystack
 ```
 
+## Formatting
+
+If you want to use a specific string format with the built in Elixir
+Logger.Formatter, you can pass that as the `:format` option to
+`RingLogger.attach/1`.
+
+If you want to use a custom formatter function, you can pass it through the
+`:format` option to `RingLogger.attach/1` instead.
+
+For example, to print the file and line number of each log message, you could
+define a function as follows:
+
+```elixir
+defmodule CustomFormatter do
+  def format(_level, message, _timestamp, metadata) do
+    "#{message} #{metadata[:file]}:#{metadata[:line]}\n"
+  rescue
+    _ -> message
+  end
+end
+```
+
+and attach to the RingLogger with:
+
+```elixir
+iex> RingLogger.attach(format: {CustomFormatter, :format}, metadata: [:file, :line])
+:ok
+iex> require Logger
+Logger
+iex> Logger.info("Important message!")
+:ok
+Important message! iex:4
+```
+
+Within an application, the `iex:4` would be the source file path and line number.
+
+See https://hexdocs.pm/logger/Logger.html#module-custom-formatting for more
+information about custom formatting.
+
 ## Programmatic usage
 
 It can be useful to get a snapshot of the log when an unexpected event occurs.
