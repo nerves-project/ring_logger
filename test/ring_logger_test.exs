@@ -219,6 +219,33 @@ defmodule RingLoggerTest do
     assert message =~ "index=1 World"
   end
 
+  test "can filter levels by module", %{io: io} do
+    :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :info})
+
+    Logger.info("foo")
+    assert_receive {:io, _message}
+    Logger.debug("bar")
+    refute_receive {:io, _message}
+    Logger.warn("baz")
+    assert_receive {:io, _message}
+  end
+
+  test "can filter module level to print lower than logger level", %{io: io} do
+    :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :debug}, level: :warn)
+
+    Logger.debug("Hello world")
+    assert_receive {:io, _message}
+  end
+
+  test "can filter module level with grep", %{io: io} do
+    :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :info})
+
+    Logger.info("Hello")
+    RingLogger.grep(~r/H..lo/, io: io)
+    assert_receive {:io, message}
+    assert String.contains?(message, "[info]  Hello")
+  end
+
   defp capture_log(fun) do
     capture_io(:user, fn ->
       fun.()

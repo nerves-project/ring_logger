@@ -107,6 +107,34 @@ iex> RingLogger.grep(~r/[Nn]eedle/)
 16:55:41.614 [info]  Needle in a haystack
 ```
 
+## Module Level Filtering
+
+If you want to filter a module or modules at a particular level you pass
+a map where the key is the module name and value in the level into the
+`:module_levels` option to `RingLogger.attach/1`.
+
+For example:
+
+```
+iex> RingLogger.attach(module_levels: %{MyModule => :info})
+```
+
+This will ignore all the `:debug` messages from `MyModule`.
+
+Also, it allows for filtering the whole project on a higher level,
+but a particular module, or a subset of modules, to log at a lower
+level like so:
+
+```
+iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warn)
+```
+
+In the example above log messages at the `:debug` level will be logged,
+but every other module will be logging at the `:warn` level.
+
+As a note if the Elixir `Logger` level is set too low you will miss some
+log messages.
+
 ## Formatting
 
 If you want to use a specific string format with the built in Elixir

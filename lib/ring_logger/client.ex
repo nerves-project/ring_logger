@@ -14,7 +14,8 @@ defmodule RingLogger.Client do
               metadata: nil,
               format: nil,
               level: nil,
-              index: 0
+              index: 0,
+              module_levels: %{}
   end
 
   @doc """
@@ -103,7 +104,8 @@ defmodule RingLogger.Client do
       colors: configure_colors(config),
       metadata: Keyword.get(config, :metadata, []) |> configure_metadata(),
       format: Keyword.get(config, :format) |> configure_formatter(),
-      level: Keyword.get(config, :level, :debug)
+      level: Keyword.get(config, :level, :debug),
+      module_levels: Keyword.get(config, :module_levels, %{})
     }
 
     {:ok, state}
@@ -223,19 +225,38 @@ defmodule RingLogger.Client do
     Logger.Formatter.compile(format)
   end
 
-  defp maybe_print({level, _} = msg, state) do
-    if meet_level?(level, state.level) do
+  defp maybe_print(msg, state) do
+    if should_print?(msg, state) do
       item = format_message(msg, state)
       IO.binwrite(state.io, item)
     end
   end
 
-  defp maybe_print({level, {_, text, _, _}} = msg, r, state) do
+  defp maybe_print({_, {_, text, _, _}} = msg, r, state) do
     flattened_text = IO.iodata_to_binary(text)
 
-    if meet_level?(level, state.level) && Regex.match?(r, flattened_text) do
+    if should_print?(msg, state) && Regex.match?(r, flattened_text) do
       item = format_message(msg, state)
       IO.binwrite(state.io, item)
+    end
+  end
+
+  defp get_module_from_msg({_, {_, _, _, meta}}) do
+    Keyword.get(meta, :module)
+  end
+
+  defp should_print?({level, _} = msg, %State{module_levels: module_levels} = state) do
+    module = get_module_from_msg(msg)
+
+    with module_level when not is_nil(module_level) <- Map.get(module_levels, module),
+         true <- meet_level?(level, module_level) do
+      true
+    else
+      nil ->
+        meet_level?(level, state.level)
+
+      _ ->
+        false
     end
   end
 end
