@@ -44,6 +44,7 @@ defmodule RingLogger do
           | {:metadata, Logger.metadata()}
           | {:format, String.t() | custom_formatter}
           | {:level, Logger.level()}
+          | {:module_levels, map()}
 
   @typedoc "A tuple holding a raw, unformatted log entry"
   @type entry :: {module(), Logger.level(), Logger.message(), Logger.Formatter.time(), keyword()}
@@ -63,6 +64,7 @@ defmodule RingLogger do
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string
   * `:level` - The minimum log level to report.
+  * `:module_levels` - A map of module to log level for module level logging
   """
   @spec attach([client_option]) :: :ok
   defdelegate attach(opts \\ []), to: Autoclient
