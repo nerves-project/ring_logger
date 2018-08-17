@@ -115,12 +115,8 @@ defmodule RingLogger.Client do
   end
 
   def handle_call({:config, config}, _from, state) do
-    new_io = Keyword.get(config, :io, state.io)
-    new_level = Keyword.get(config, :level, state.level)
-
-    new_state = %State{state | io: new_io, level: new_level}
-
-    {:reply, :ok, new_state}
+    new_config = Keyword.drop(config, [:index])
+    {:reply, :ok, struct(state, new_config)}
   end
 
   def handle_call(:attach, _from, state) do
