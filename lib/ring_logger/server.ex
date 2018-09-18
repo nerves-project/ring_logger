@@ -8,7 +8,7 @@ defmodule RingLogger.Server do
   defmodule State do
     @moduledoc false
 
-    @default_max_size 100
+    @default_max_size 1024
 
     defstruct clients: [],
               buffer: :queue.new(),

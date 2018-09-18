@@ -14,14 +14,14 @@ defmodule RingLogger do
   config :logger, backends: [RingLogger]
 
   # Set the number of messages to hold in the circular buffer
-  config :logger, RingLogger, max_size: 100
+  config :logger, RingLogger, max_size: 1024
   ```
 
   Or add manually:
 
   ```elixir
   Logger.add_backend(RingLogger)
-  Logger.configure(RingLogger, max_size: 100)
+  Logger.configure(RingLogger, max_size: 1024)
   ```
 
   Once added as a backend, you have two options depending on whether you're

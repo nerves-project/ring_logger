@@ -37,14 +37,14 @@ use Mix.Config
 config :logger, backends: [RingLogger]
 
 # Set the number of messages to hold in the circular buffer
-config :logger, RingLogger, max_size: 100
+config :logger, RingLogger, max_size: 1024
 ```
 
 Or you can start the backend manually by running the following:
 
 ```elixir
 Logger.add_backend(RingLogger)
-Logger.configure(RingLogger, max_size: 100)
+Logger.configure(RingLogger, max_size: 1024)
 ```
 
 ## IEx session usage
