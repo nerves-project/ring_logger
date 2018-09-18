@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.5.0
+
+* New features
+  * Add support for changing the log levels on a per-module basis. Thanks to
+    Matt Ludwigs for this change. See the README.md for details.
+  * Add a `:format` option to accept a custom format function similar to how
+    `Logger` supports custom formatting. Thanks to Tim Mecklem for this.
+  * Bumped default ring buffer size from 100 messages to 1024.
+
+* Bug fixes
+  * Log clients are now fully configurable. Previous versions inadvertantly
+    limited the options that could be set.
+
 ## v0.4.1
 
 * Bug fixes
