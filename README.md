@@ -115,7 +115,7 @@ a map where the key is the module name and value in the level into the
 
 For example:
 
-```
+```elixir
 iex> RingLogger.attach(module_levels: %{MyModule => :info})
 ```
 
@@ -125,7 +125,7 @@ Also, it allows for filtering the whole project on a higher level,
 but a particular module, or a subset of modules, to log at a lower
 level like so:
 
-```
+```elixir
 iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warn)
 ```
 
@@ -171,8 +171,8 @@ Important message! iex:4
 
 Within an application, the `iex:4` would be the source file path and line number.
 
-See https://hexdocs.pm/logger/Logger.html#module-custom-formatting for more
-information about custom formatting.
+See [Logger custom formatting](https://hexdocs.pm/logger/Logger.html#module-custom-formatting)
+for more information.
 
 ## Programmatic usage
 
