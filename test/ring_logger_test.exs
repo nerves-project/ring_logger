@@ -230,6 +230,19 @@ defmodule RingLoggerTest do
     assert_receive {:io, _message}
   end
 
+  test "can filter all levels by module", %{io: io} do
+    :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :none})
+
+    Logger.info("foo")
+    refute_receive {:io, _message}
+    Logger.debug("bar")
+    refute_receive {:io, _message}
+    Logger.warn("baz")
+    refute_receive {:io, _message}
+    Logger.error("uhh")
+    refute_receive {:io, _message}
+  end
+
   test "can filter module level to print lower than logger level", %{io: io} do
     :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :debug}, level: :warn)
 

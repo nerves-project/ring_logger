@@ -64,7 +64,8 @@ defmodule RingLogger do
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string
   * `:level` - The minimum log level to report.
-  * `:module_levels` - A map of module to log level for module level logging
+  * `:module_levels` - A map of module to log level for module level logging. For example,
+    %{MyModule => :error, MyOtherModule => :none}
   """
   @spec attach([client_option]) :: :ok
   defdelegate attach(opts \\ []), to: Autoclient
