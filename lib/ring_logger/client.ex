@@ -196,6 +196,7 @@ defmodule RingLogger.Client do
   end
 
   defp meet_level?(_lvl, nil), do: true
+  defp meet_level?(_lvl, :none), do: false
 
   defp meet_level?(lvl, min) do
     Logger.compare_levels(lvl, min) != :lt

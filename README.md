@@ -130,7 +130,8 @@ iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warn)
 ```
 
 In the example above log messages at the `:debug` level will be logged,
-but every other module will be logging at the `:warn` level.
+but every other module will be logging at the `:warn` level. You can also
+turn off a module's logging completely by specifying `:none`.
 
 As a note if the Elixir `Logger` level is set too low you will miss some
 log messages.
