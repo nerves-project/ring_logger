@@ -25,6 +25,23 @@ defmodule RingLoggerTest do
     {:ok, [io: pid]}
   end
 
+  @doc """
+  Ensure that a log message makes it way through the logger processes.
+
+  The RingLogger needs to be attached for this to work. This makes
+  logging synchronous so that we can test tail, next, grep, etc. that
+  rely on the messages being received by RingLogger.
+  """
+  def handshake_log(io, level, message) do
+    Logger.log(level, message)
+    assert_receive {:io, msg}
+    assert String.contains?(msg, to_string(level))
+
+    flattened_message = IO.iodata_to_binary(message)
+    assert String.contains?(msg, flattened_message)
+    io
+  end
+
   test "can attach", %{io: io} do
     :ok = RingLogger.attach(io: io)
     Logger.debug("Hello")
@@ -220,6 +237,23 @@ defmodule RingLoggerTest do
 
   test "receive nothing when fetching buffer out of range" do
     assert [] = RingLogger.get(100)
+  end
+
+  test "buffer can be paged", %{io: io} do
+    Logger.configure_backend(RingLogger, max_size: 3)
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:debug, "Foo")
+    |> handshake_log(:debug, "Bar")
+    |> handshake_log(:debug, "Baz")
+
+    buffer = RingLogger.get(1, 1)
+    assert [{:debug, {Logger, "Bar", _, _}}] = buffer
+    buffer = RingLogger.get(1, 2)
+    assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
+    buffer = RingLogger.get(1, 3)
+    assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
 
   test "can format messages", %{io: io} do

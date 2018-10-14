@@ -138,7 +138,7 @@ defmodule RingLogger.Client do
   end
 
   def handle_call(:next, _from, state) do
-    messages = Server.get(state.index)
+    messages = Server.get(state.index, 0)
 
     case List.last(messages) do
       nil ->
@@ -163,7 +163,7 @@ defmodule RingLogger.Client do
   end
 
   def handle_call({:grep, regex}, _from, state) do
-    Server.get()
+    Server.get(0, 0)
     |> Enum.each(fn msg -> maybe_print(msg, regex, state) end)
 
     {:reply, :ok, state}

@@ -116,10 +116,12 @@ defmodule RingLogger do
   defdelegate format(message), to: Autoclient
 
   @doc """
-  Get all log messages at the specified index and later.
+  Get n log messages starting at the specified index.
+
+  Set n to 0 to get entries to the end
   """
-  @spec get(non_neg_integer()) :: [entry()]
-  defdelegate get(index \\ 0), to: Server
+  @spec get(non_neg_integer(), non_neg_integer()) :: [entry()]
+  defdelegate get(index \\ 0, n \\ 0), to: Server
 
   @doc """
   Update the logger configuration.
