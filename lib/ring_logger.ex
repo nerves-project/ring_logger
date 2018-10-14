@@ -47,7 +47,8 @@ defmodule RingLogger do
           | {:module_levels, map()}
 
   @typedoc "A tuple holding a raw, unformatted log entry"
-  @type entry :: {module(), Logger.level(), Logger.message(), Logger.Formatter.time(), keyword()}
+  @type entry ::
+          {module(), Logger.level(), Logger.message(), Logger.Formatter.time(), Logger.metadata()}
 
   @typep custom_formatter :: {module, function}
 
@@ -156,16 +157,19 @@ defmodule RingLogger do
     {:ok, :ok, configure(opts)}
   end
 
-  def handle_event(:flush, state) do
+  def handle_event({level, _group_leader, message}, state) do
+    Server.log(level, message)
     {:ok, state}
   end
 
-  def handle_event({level, _gl, {Logger, _, _, _} = msg}, state) do
-    Server.log({level, msg})
+  def handle_event(:flush, state) do
+    # No flushing needed for RingLogger
     {:ok, state}
   end
 
   def handle_info(_, state) do
+    # Ignore everything else since it's hard to justify RingLogger crashing
+    # on a bad message.
     {:ok, state}
   end
 

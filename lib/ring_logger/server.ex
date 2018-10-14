@@ -42,8 +42,12 @@ defmodule RingLogger.Server do
     GenServer.call(__MODULE__, {:get, start_index, n})
   end
 
-  def log(msg) do
-    GenServer.cast(__MODULE__, {:log, msg})
+  @spec log(
+          Logger.level(),
+          {Logger, Logger.message(), Logger.Formatter.time(), Logger.metadata()}
+        ) :: :ok
+  def log(level, message) do
+    GenServer.cast(__MODULE__, {:log, level, message})
   end
 
   @spec tail(non_neg_integer()) :: [RingLogger.entry()]
@@ -92,8 +96,8 @@ defmodule RingLogger.Server do
     {:reply, :queue.to_list(last_n), state}
   end
 
-  def handle_cast({:log, msg}, state) do
-    {:noreply, push(msg, state)}
+  def handle_cast({:log, level, message}, state) do
+    {:noreply, push(level, message, state)}
   end
 
   def handle_info({:DOWN, _ref, _, pid, _reason}, state) do
@@ -153,23 +157,27 @@ defmodule RingLogger.Server do
 
   defp trim(state), do: state
 
-  defp push({level, {mod, msg, ts, md}}, state) do
+  defp push(level, {mod, msg, ts, md}, state) do
     index = state.index + state.size
-    msg = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
+    log_entry = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
 
-    state =
-      if state.size == state.max_size do
-        buffer = :queue.drop(state.buffer)
-        %{state | buffer: buffer, index: state.index + 1}
-      else
-        %{state | size: state.size + 1}
-      end
+    Enum.each(state.clients, &send_log(&1, log_entry))
 
-    Enum.each(state.clients, &send_log(&1, msg))
-    %{state | buffer: :queue.in(msg, state.buffer)}
+    ring_insert(state, log_entry)
   end
 
-  defp send_log({client_pid, _ref}, msg) do
-    send(client_pid, {:log, msg})
+  defp ring_insert(state, item) do
+    if state.size == state.max_size do
+      buffer = :queue.drop(state.buffer)
+      buffer = :queue.in(item, buffer)
+      %{state | buffer: buffer, index: state.index + 1}
+    else
+      buffer = :queue.in(item, state.buffer)
+      %{state | buffer: buffer, size: state.size + 1}
+    end
+  end
+
+  defp send_log({client_pid, _ref}, log_entry) do
+    send(client_pid, {:log, log_entry})
   end
 end
