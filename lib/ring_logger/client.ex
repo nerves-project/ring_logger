@@ -66,11 +66,19 @@ defmodule RingLogger.Client do
   end
 
   @doc """
-  Tail the messages in the log.
+  Get the last n messages.
   """
-  @spec tail(GenServer.server()) :: :ok
-  def tail(client_pid) do
-    GenServer.call(client_pid, :tail)
+  @spec tail(GenServer.server(), non_neg_integer()) :: :ok
+  def tail(client_pid, n) do
+    GenServer.call(client_pid, {:tail, n})
+  end
+
+  @doc """
+  Get the next set of the messages in the log.
+  """
+  @spec next(GenServer.server()) :: :ok
+  def next(client_pid) do
+    GenServer.call(client_pid, :next)
   end
 
   @doc """
@@ -129,7 +137,7 @@ defmodule RingLogger.Client do
     {:reply, Server.detach_client(self()), state}
   end
 
-  def handle_call(:tail, _from, state) do
+  def handle_call(:next, _from, state) do
     messages = Server.get(state.index)
 
     case List.last(messages) do
@@ -142,6 +150,12 @@ defmodule RingLogger.Client do
         next_index = message_index(last_message) + 1
         {:reply, :ok, %{state | index: next_index}}
     end
+  end
+
+  def handle_call({:tail, n}, _from, state) do
+    Enum.each(Server.tail(n), fn msg -> maybe_print(msg, state) end)
+
+    {:reply, :ok, state}
   end
 
   def handle_call(:reset, _from, state) do

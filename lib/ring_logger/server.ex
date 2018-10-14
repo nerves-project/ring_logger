@@ -46,6 +46,11 @@ defmodule RingLogger.Server do
     GenServer.cast(__MODULE__, {:log, msg})
   end
 
+  @spec tail(non_neg_integer()) :: [RingLogger.entry()]
+  def tail(n) do
+    GenServer.call(__MODULE__, {:tail, n})
+  end
+
   def init(opts) do
     {:ok, merge_opts(opts, %State{})}
   end
@@ -77,6 +82,12 @@ defmodule RingLogger.Server do
       end
 
     {:reply, resp, state}
+  end
+
+  def handle_call({:tail, n}, _from, state) do
+    start = max(0, state.size - n)
+    {_, last_n} = :queue.split(start, state.buffer)
+    {:reply, :queue.to_list(last_n), state}
   end
 
   def handle_cast({:log, msg}, state) do

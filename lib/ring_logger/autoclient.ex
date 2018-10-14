@@ -40,12 +40,21 @@ defmodule RingLogger.Autoclient do
   end
 
   @doc """
-  Print all log messages since the previous time this was called.
+  Print the log messages since the previous time this was called.
   """
-  def tail(config \\ []) do
+  def next(config \\ []) do
     with :ok <- check_server_started(),
          pid <- maybe_create_client(config),
-         do: Client.tail(pid)
+         do: Client.next(pid)
+  end
+
+  @doc """
+  Print the most recent log messages.
+  """
+  def tail(n, config) do
+    with :ok <- check_server_started(),
+         pid <- maybe_create_client(config),
+         do: Client.tail(pid, n)
   end
 
   @doc """

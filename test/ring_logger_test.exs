@@ -103,15 +103,15 @@ defmodule RingLoggerTest do
     assert message =~ "[debug] Hello, world"
   end
 
-  test "can tail the log", %{io: io} do
+  test "can next the log", %{io: io} do
     Logger.debug("Hello")
-    :ok = RingLogger.tail(io: io)
+    :ok = RingLogger.next(io: io)
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
 
     Logger.debug("Foo")
     Logger.debug("Bar")
-    :ok = RingLogger.tail()
+    :ok = RingLogger.next()
     assert_receive {:io, message1}
     assert_receive {:io, message2}
 
@@ -121,14 +121,39 @@ defmodule RingLoggerTest do
 
   test "can reset to the beginning", %{io: io} do
     Logger.debug("Hello")
-    :ok = RingLogger.tail(io: io)
+    :ok = RingLogger.next(io: io)
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
 
     :ok = RingLogger.reset()
+    :ok = RingLogger.next()
+    assert_receive {:io, message}
+    assert message =~ "[debug] Hello"
+  end
+
+  test "can tail the log", %{io: io} do
+    :ok = RingLogger.tail(io: io)
+    refute_receive {:io, _}
+
+    Logger.debug("Hello")
     :ok = RingLogger.tail()
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
+
+    Logger.debug("Foo")
+    Logger.debug("Bar")
+    :ok = RingLogger.tail()
+    assert_receive {:io, message1}
+    assert_receive {:io, message2}
+    assert_receive {:io, message3}
+
+    assert message1 =~ "[debug] Hello"
+    assert message2 =~ "[debug] Foo"
+    assert message3 =~ "[debug] Bar"
+
+    :ok = RingLogger.tail(1)
+    assert_receive {:io, message}
+    assert message =~ "[debug] Bar"
   end
 
   test "can get buffer", %{io: io} do
