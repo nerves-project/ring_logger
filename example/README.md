@@ -50,7 +50,7 @@ If you're the type of person who prefers to poll their logs, you can do that
 too:
 
 ```elixir
-iex(node1@0.0.0.0)> RingLogger.tail
+iex(node1@0.0.0.0)> RingLogger.next
 
 12:48:43.142 [debug] 285
 
@@ -62,7 +62,7 @@ iex(node1@0.0.0.0)> RingLogger.tail
 iex(node1@0.0.0.0)>
 ```
 
-`RingLogger.tail` keeps track of your position in the log so only new
+`RingLogger.next` keeps track of your position in the log so only new
 messages get printed. If you create a new remote shell session, the position is
 reset. You can also call `RingLogger.reset` to reset the position
 manually. Keep in mind that logs are stored in a ring buffer, so as soon as the

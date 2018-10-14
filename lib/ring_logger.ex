@@ -26,10 +26,10 @@ defmodule RingLogger do
 
   Once added as a backend, you have two options depending on whether you're
   accessing the `RingLogger` via the IEx prompt or via code.  If you're at the
-  IEx prompt, use the helper methods in here like `attach`, `detach`, `tail`,
-  `grep`, etc. They'll automate a few things behind the scenes. If you're
-  writing a program that needs to get log messages, use `get` or `start_link` a
-  `RingLogger.Client` and call its methods directly.
+  IEx prompt, use the helper methods in here like `attach`, `detach`, `next`,
+  `tail`, `grep`, etc. They'll automate a few things behind the scenes. If
+  you're writing a program that needs to get log messages, use `get` or
+  `start_link` a `RingLogger.Client` and call its methods directly.
   """
 
   alias RingLogger.{Server, Autoclient}
