@@ -68,17 +68,19 @@ defmodule RingLogger.Client do
   @doc """
   Get the last n messages.
   """
-  @spec tail(GenServer.server(), non_neg_integer()) :: :ok
+  @spec tail(GenServer.server(), non_neg_integer()) :: :ok | {:error, term()}
   def tail(client_pid, n) do
-    GenServer.call(client_pid, {:tail, n})
+    {io, to_print} = GenServer.call(client_pid, {:tail, n})
+    IO.binwrite(io, to_print)
   end
 
   @doc """
   Get the next set of the messages in the log.
   """
-  @spec next(GenServer.server()) :: :ok
+  @spec next(GenServer.server()) :: :ok | {:error, term()}
   def next(client_pid) do
-    GenServer.call(client_pid, :next)
+    {io, to_print} = GenServer.call(client_pid, :next)
+    IO.binwrite(io, to_print)
   end
 
   @doc """
@@ -101,9 +103,10 @@ defmodule RingLogger.Client do
   @doc """
   Run a regular expression on each entry in the log and print out the matchers.
   """
-  @spec grep(GenServer.server(), Regex.t()) :: :ok
+  @spec grep(GenServer.server(), Regex.t()) :: :ok | {:error, term()}
   def grep(client_pid, regex) do
-    GenServer.call(client_pid, {:grep, regex})
+    {io, to_print} = GenServer.call(client_pid, {:grep, regex})
+    IO.binwrite(io, to_print)
   end
 
   def init(config) do
@@ -138,24 +141,31 @@ defmodule RingLogger.Client do
   end
 
   def handle_call(:next, _from, state) do
-    messages = Server.get(state.index, 0)
-
-    case List.last(messages) do
-      nil ->
+    case Server.get(state.index, 0) do
+      [] ->
         # No messages
-        {:reply, :ok, state}
+        {:reply, {state.io, []}, state}
 
-      last_message ->
-        Enum.each(messages, fn msg -> maybe_print(msg, state) end)
+      messages ->
+        to_return =
+          messages
+          |> Enum.filter(fn message -> should_print?(message, state) end)
+          |> Enum.map(fn message -> format_message(message, state) end)
+
+        last_message = List.last(messages)
         next_index = message_index(last_message) + 1
-        {:reply, :ok, %{state | index: next_index}}
+
+        {:reply, {state.io, to_return}, %{state | index: next_index}}
     end
   end
 
   def handle_call({:tail, n}, _from, state) do
-    Enum.each(Server.tail(n), fn msg -> maybe_print(msg, state) end)
+    to_return =
+      Server.tail(n)
+      |> Enum.filter(fn message -> should_print?(message, state) end)
+      |> Enum.map(fn message -> format_message(message, state) end)
 
-    {:reply, :ok, state}
+    {:reply, {state.io, to_return}, state}
   end
 
   def handle_call(:reset, _from, state) do
@@ -163,10 +173,14 @@ defmodule RingLogger.Client do
   end
 
   def handle_call({:grep, regex}, _from, state) do
-    Server.get(0, 0)
-    |> Enum.each(fn msg -> maybe_print(msg, regex, state) end)
+    to_return =
+      Server.get(0, 0)
+      |> Enum.filter(fn message -> should_print?(message, state) end)
+      |> Enum.map(fn message -> format_message(message, state) end)
+      |> Enum.map(&IO.iodata_to_binary/1)
+      |> Enum.filter(&Regex.match?(regex, &1))
 
-    {:reply, :ok, state}
+    {:reply, {state.io, to_return}, state}
   end
 
   def handle_call({:format, msg}, _from, state) do
@@ -242,15 +256,6 @@ defmodule RingLogger.Client do
 
   defp maybe_print(msg, state) do
     if should_print?(msg, state) do
-      item = format_message(msg, state)
-      IO.binwrite(state.io, item)
-    end
-  end
-
-  defp maybe_print({_, {_, text, _, _}} = msg, r, state) do
-    flattened_text = IO.iodata_to_binary(text)
-
-    if should_print?(msg, state) && Regex.match?(r, flattened_text) do
       item = format_message(msg, state)
       IO.binwrite(state.io, item)
     end

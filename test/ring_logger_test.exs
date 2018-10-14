@@ -141,11 +141,10 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Bar")
 
     :ok = RingLogger.next()
-    assert_receive {:io, message1}
-    assert_receive {:io, message2}
+    assert_receive {:io, messages}
 
-    assert message1 =~ "[debug] Foo"
-    assert message2 =~ "[debug] Bar"
+    assert messages =~ "[debug] Foo"
+    assert messages =~ "[debug] Bar"
   end
 
   test "can reset to the beginning", %{io: io} do
@@ -165,7 +164,7 @@ defmodule RingLoggerTest do
   test "can tail the log", %{io: io} do
     :ok = RingLogger.attach(io: io)
     :ok = RingLogger.tail(io: io)
-    refute_receive {:io, _}
+    assert_receive {:io, ""}
 
     handshake_log(io, :debug, "Hello")
     :ok = RingLogger.tail()
@@ -178,17 +177,17 @@ defmodule RingLoggerTest do
 
     :ok = RingLogger.tail()
 
-    assert_receive {:io, message1}
-    assert_receive {:io, message2}
-    assert_receive {:io, message3}
+    assert_receive {:io, messages}
 
-    assert message1 =~ "[debug] Hello"
-    assert message2 =~ "[debug] Foo"
-    assert message3 =~ "[debug] Bar"
+    assert messages =~ "[debug] Hello"
+    assert messages =~ "[debug] Foo"
+    assert messages =~ "[debug] Bar"
 
     :ok = RingLogger.tail(1)
     assert_receive {:io, message}
     assert message =~ "[debug] Bar"
+    refute message =~ "[debug] Hello"
+    refute message =~ "[debug] Foo"
   end
 
   test "can get buffer", %{io: io} do
