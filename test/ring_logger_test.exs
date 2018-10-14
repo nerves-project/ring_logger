@@ -105,29 +105,41 @@ defmodule RingLoggerTest do
   end
 
   test "can grep log", %{io: io} do
-    Logger.debug("Hello")
-    Logger.debug("World")
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:debug, "Hello")
+    |> handshake_log(:debug, "World")
+
     RingLogger.grep(~r/H..lo/, io: io)
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
   end
 
   test "can grep iodata in log", %{io: io} do
-    Logger.debug(["Hello", ",", ' world'])
-    Logger.debug("World")
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:debug, ["Hello", ",", ' world'])
+    |> handshake_log(:debug, "World")
+
     RingLogger.grep(~r/H..lo/, io: io)
     assert_receive {:io, message}
     assert message =~ "[debug] Hello, world"
   end
 
   test "can next the log", %{io: io} do
-    Logger.debug("Hello")
+    :ok = RingLogger.attach(io: io)
+    handshake_log(io, :debug, "Hello")
+
     :ok = RingLogger.next(io: io)
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
 
-    Logger.debug("Foo")
-    Logger.debug("Bar")
+    io
+    |> handshake_log(:debug, "Foo")
+    |> handshake_log(:debug, "Bar")
+
     :ok = RingLogger.next()
     assert_receive {:io, message1}
     assert_receive {:io, message2}
@@ -137,7 +149,9 @@ defmodule RingLoggerTest do
   end
 
   test "can reset to the beginning", %{io: io} do
-    Logger.debug("Hello")
+    :ok = RingLogger.attach(io: io)
+    handshake_log(io, :debug, "Hello")
+
     :ok = RingLogger.next(io: io)
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
@@ -149,17 +163,21 @@ defmodule RingLoggerTest do
   end
 
   test "can tail the log", %{io: io} do
+    :ok = RingLogger.attach(io: io)
     :ok = RingLogger.tail(io: io)
     refute_receive {:io, _}
 
-    Logger.debug("Hello")
+    handshake_log(io, :debug, "Hello")
     :ok = RingLogger.tail()
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
 
-    Logger.debug("Foo")
-    Logger.debug("Bar")
+    io
+    |> handshake_log(:debug, "Foo")
+    |> handshake_log(:debug, "Bar")
+
     :ok = RingLogger.tail()
+
     assert_receive {:io, message1}
     assert_receive {:io, message2}
     assert_receive {:io, message3}
@@ -175,36 +193,28 @@ defmodule RingLoggerTest do
 
   test "can get buffer", %{io: io} do
     :ok = RingLogger.attach(io: io)
-    Logger.debug("Hello")
-    assert_receive {:io, message}
+    handshake_log(io, :debug, "Hello")
+
     buffer = RingLogger.get()
     assert [{:debug, {Logger, "Hello", _, _}}] = buffer
-
-    formatted_message =
-      buffer
-      |> List.first()
-      |> RingLogger.format()
-      |> IO.iodata_to_binary()
-
-    assert formatted_message == message
   end
 
   test "buffer does not exceed size", %{io: io} do
     Logger.configure_backend(RingLogger, max_size: 2)
     :ok = RingLogger.attach(io: io)
 
-    Logger.debug("Foo")
-    assert_receive {:io, _message}
+    handshake_log(io, :debug, "Foo")
+
     buffer = RingLogger.get()
     assert [{:debug, {Logger, "Foo", _, _}}] = buffer
 
-    Logger.debug("Bar")
-    assert_receive {:io, _message}
+    handshake_log(io, :debug, "Bar")
+
     buffer = RingLogger.get()
     assert [{:debug, {Logger, "Foo", _, _}}, {:debug, {Logger, "Bar", _, _}}] = buffer
 
-    Logger.debug("Baz")
-    assert_receive {:io, _message}
+    handshake_log(io, :debug, "Baz")
+
     buffer = RingLogger.get()
     assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
@@ -212,12 +222,12 @@ defmodule RingLoggerTest do
   test "buffer can be fetched by range", %{io: io} do
     Logger.configure_backend(RingLogger, max_size: 3)
     :ok = RingLogger.attach(io: io)
-    Logger.debug("Foo")
-    assert_receive {:io, _message}
-    Logger.debug("Bar")
-    assert_receive {:io, _message}
-    Logger.debug("Baz")
-    assert_receive {:io, _message}
+
+    io
+    |> handshake_log(:debug, "Foo")
+    |> handshake_log(:debug, "Bar")
+    |> handshake_log(:debug, "Baz")
+
     buffer = RingLogger.get(2)
     assert [{:debug, {Logger, "Baz", _, _}}] = buffer
     buffer = RingLogger.get(1)
@@ -226,11 +236,13 @@ defmodule RingLoggerTest do
 
   test "buffer start index is less then buffer_start_index", %{io: io} do
     Logger.configure_backend(RingLogger, max_size: 1)
+
     :ok = RingLogger.attach(io: io)
-    Logger.debug("Foo")
-    assert_receive {:io, _message}
-    Logger.debug("Bar")
-    assert_receive {:io, _message}
+
+    io
+    |> handshake_log(:debug, "Foo")
+    |> handshake_log(:debug, "Bar")
+
     buffer = RingLogger.get(0)
     assert [{:debug, {Logger, "Bar", _, _}}] = buffer
   end
@@ -311,8 +323,8 @@ defmodule RingLoggerTest do
 
   test "can filter module level with grep", %{io: io} do
     :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :info})
+    handshake_log(io, :info, "Hello")
 
-    Logger.info("Hello")
     RingLogger.grep(~r/H..lo/, io: io)
     assert_receive {:io, message}
     assert String.contains?(message, "[info]  Hello")
