@@ -80,7 +80,7 @@ This probably isn't too exciting until you see that it works on remote shells as
 well (the `:console` logger doesn't do this).
 
 Say you prefer polling for log messages rather than having them print over your
-console at random times. If you're still attached, then `detach` and `tail`:
+console at random times. If you're still attached, then `detach` and `next`:
 
 ```elixir
 iex> RingLogger.detach
@@ -89,6 +89,21 @@ iex> Logger.info("Hello logger, how are you?")
 :ok
 iex> Logger.info("It's a nice day. Wouldn't you say?")
 :ok
+iex> RingLogger.next
+
+14:04:52.516 [info]  hello
+
+14:11:54.397 [info]  Hello logger, how are you?
+
+14:12:09.180 [info]  It's a nice day. Wouldn't you say?
+:ok
+iex> RingLogger.next
+:ok
+```
+
+If you only want to see the most recent entries, run `tail`:
+
+```elixir
 iex> RingLogger.tail
 
 14:04:52.516 [info]  hello
