@@ -37,9 +37,9 @@ defmodule RingLogger.Server do
     GenServer.call(__MODULE__, {:detach, client_pid})
   end
 
-  @spec get(non_neg_integer()) :: [RingLogger.entry()]
-  def get(start_index \\ 0) do
-    GenServer.call(__MODULE__, {:get, start_index})
+  @spec get(non_neg_integer(), non_neg_integer()) :: [RingLogger.entry()]
+  def get(start_index, n) do
+    GenServer.call(__MODULE__, {:get, start_index, n})
   end
 
   def log(msg) do
@@ -67,7 +67,7 @@ defmodule RingLogger.Server do
     {:reply, :ok, detach_client(pid, state)}
   end
 
-  def handle_call({:get, start_index}, _from, state) do
+  def handle_call({:get, start_index, n}, _from, state) do
     resp =
       cond do
         start_index <= state.index ->
@@ -81,7 +81,9 @@ defmodule RingLogger.Server do
           :queue.to_list(buffer_range)
       end
 
-    {:reply, resp, state}
+    paged_resp = if n <= 0, do: resp, else: Enum.take(resp, n)
+
+    {:reply, paged_resp, state}
   end
 
   def handle_call({:tail, n}, _from, state) do
