@@ -77,10 +77,19 @@ defmodule RingLogger do
   defdelegate detach(), to: Autoclient
 
   @doc """
-  Tail the messages in the log.
+  Print the next messages in the log.
   """
-  @spec tail([client_option]) :: :ok | {:error, term()}
-  defdelegate tail(opts \\ []), to: Autoclient
+  @spec next([client_option]) :: :ok | {:error, term()}
+  defdelegate next(opts \\ []), to: Autoclient
+
+  @doc """
+  Print the last n messages in the log.
+  """
+  @spec tail(non_neg_integer(), [client_option]) :: :ok | {:error, term()}
+  def tail(), do: Autoclient.tail(10, [])
+  def tail(opts) when is_list(opts), do: Autoclient.tail(10, opts)
+  def tail(n) when is_integer(n), do: Autoclient.tail(n, [])
+  def tail(n, opts), do: Autoclient.tail(n, opts)
 
   @doc """
   Reset the index into the log for `tail/1` to the oldest entry.
