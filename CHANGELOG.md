@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.6.0
+
+Important: `RingLogger.tail` is now `RingLogger.next`. `RingLogger.tail` shows
+the last n lines of the log (default is 10).
+
+* New features
+  * `grep` greps the whole log entry rather than just the message portion. You
+    can `grep` on timestamps and message levels now.
+  * Functions that print log messages do the printing in the caller's context so
+    that printing timeouts don't happen in RingLogger GenServers calls.
+  * Added `:none` as a per-module log level to completely silence a module.
+  * Added `:pager` option to specify a custom printer for the interactive
+    commands.
+
 ## v0.5.0
 
 * New features
