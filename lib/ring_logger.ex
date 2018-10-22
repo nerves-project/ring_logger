@@ -37,9 +37,13 @@ defmodule RingLogger do
   @typedoc "Option values used by the ring logger"
   @type server_option :: {:max_size, pos_integer()}
 
+  @typedoc "Callback function for printing/paging tail, grep, and next output"
+  @type pager_fun :: (IO.device(), iodata() -> :ok | {:error, term()})
+
   @typedoc "Option values used by client-side functions like `attach` and `tail`"
   @type client_option ::
           {:io, term}
+          | {:pager, pager_fun()}
           | {:color, term}
           | {:metadata, Logger.metadata()}
           | {:format, String.t() | custom_formatter}
@@ -60,12 +64,14 @@ defmodule RingLogger do
   Attach the current IEx session to the logger. It will start printing log messages.
 
   Options include:
-  * `:io` - Defaults to `:stdio`
-  * `:colors` -
-  * `:metadata` - A KV list of additional metadata
-  * `:format` - A custom format string
-  * `:level` - The minimum log level to report.
-  * `:module_levels` - A map of module to log level for module level logging. For example,
+
+  * `:io` - output location when printing. Defaults to `:stdio`
+  * `:colors` - a keyword list of coloring options
+  * `:metadata` - a keyword list of additional metadata
+  * `:format` - the format message used to print logs
+  * `:level` - the minimum log level to report by this backend. Note that the `:logger`
+    application's `:level` setting filters log messages prior to `RingLogger`.
+  * `:module_levels` - a map of log level overrides per module. For example,
     %{MyModule => :error, MyOtherModule => :none}
   """
   @spec attach([client_option]) :: :ok
@@ -79,12 +85,22 @@ defmodule RingLogger do
 
   @doc """
   Print the next messages in the log.
+
+  Options include:
+
+  * Options from `attach/1`
+  * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
   """
   @spec next([client_option]) :: :ok | {:error, term()}
   defdelegate next(opts \\ []), to: Autoclient
 
   @doc """
   Print the last n messages in the log.
+
+  Options include:
+
+  * Options from `attach/1`
+  * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
   """
   @spec tail(non_neg_integer(), [client_option]) :: :ok | {:error, term()}
   def tail(), do: Autoclient.tail(10, [])
@@ -105,6 +121,11 @@ defmodule RingLogger do
 
   iex> RingLogger.grep(~r/something/)
   :ok
+
+    Options include:
+
+  * Options from `attach/1`
+  * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
   """
   @spec grep(Regex.t(), [client_option]) :: :ok | {:error, term()}
   defdelegate grep(regex, opts \\ []), to: Autoclient

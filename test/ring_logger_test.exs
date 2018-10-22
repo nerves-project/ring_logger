@@ -233,6 +233,69 @@ defmodule RingLoggerTest do
     assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
   end
 
+  test "next supports passing a custom pager", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:info, "Hello")
+    |> handshake_log(:debug, "Foo")
+    |> handshake_log(:debug, "Bar")
+
+    # Even thought the intention for a custom pager is to "page" the output to the user,
+    # just print out the number of characters as a check that the custom function is
+    # actually run.
+    :ok =
+      RingLogger.next(
+        pager: fn device, msg ->
+          IO.write(device, "Got #{String.length(IO.iodata_to_binary(msg))} characters")
+        end
+      )
+
+    assert_receive {:io, messages}
+
+    assert messages =~ "Got 107 characters"
+  end
+
+  test "tail supports passing a custom pager", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:info, "Hello")
+    |> handshake_log(:debug, "Foo")
+    |> handshake_log(:debug, "Bar")
+
+    :ok =
+      RingLogger.tail(2,
+        pager: fn device, msg ->
+          IO.write(device, "Got #{String.length(IO.iodata_to_binary(msg))} characters")
+        end
+      )
+
+    assert_receive {:io, messages}
+
+    assert messages =~ "Got 70 characters"
+  end
+
+  test "grep supports passing a custom pager", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:info, "Hello")
+    |> handshake_log(:debug, "Foo")
+    |> handshake_log(:debug, "Bar")
+
+    :ok =
+      RingLogger.grep(~r/debug/,
+        pager: fn device, msg ->
+          IO.write(device, "Got #{String.length(IO.iodata_to_binary(msg))} characters")
+        end
+      )
+
+    assert_receive {:io, messages}
+
+    assert messages =~ "Got 70 characters"
+  end
+
   test "buffer start index is less then buffer_start_index", %{io: io} do
     Logger.configure_backend(RingLogger, max_size: 1)
 

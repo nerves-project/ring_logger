@@ -67,20 +67,32 @@ defmodule RingLogger.Client do
 
   @doc """
   Get the last n messages.
+
+  Supported options:
+
+  * `:pager` - an optional 2-arity function that takes an IO device and what to print
   """
   @spec tail(GenServer.server(), non_neg_integer()) :: :ok | {:error, term()}
-  def tail(client_pid, n) do
+  def tail(client_pid, n, opts \\ []) do
     {io, to_print} = GenServer.call(client_pid, {:tail, n})
-    IO.binwrite(io, to_print)
+
+    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+    pager.(io, to_print)
   end
 
   @doc """
   Get the next set of the messages in the log.
+
+  Supported options:
+
+  * `:pager` - an optional 2-arity function that takes an IO device and what to print
   """
-  @spec next(GenServer.server()) :: :ok | {:error, term()}
-  def next(client_pid) do
+  @spec next(GenServer.server(), keyword()) :: :ok | {:error, term()}
+  def next(client_pid, opts \\ []) do
     {io, to_print} = GenServer.call(client_pid, :next)
-    IO.binwrite(io, to_print)
+
+    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+    pager.(io, to_print)
   end
 
   @doc """
@@ -102,11 +114,17 @@ defmodule RingLogger.Client do
 
   @doc """
   Run a regular expression on each entry in the log and print out the matchers.
+
+  Supported options:
+
+  * `:pager` - an optional 2-arity function that takes an IO device and what to print
   """
-  @spec grep(GenServer.server(), Regex.t()) :: :ok | {:error, term()}
-  def grep(client_pid, regex) do
+  @spec grep(GenServer.server(), Regex.t(), keyword()) :: :ok | {:error, term()}
+  def grep(client_pid, regex, opts \\ []) do
     {io, to_print} = GenServer.call(client_pid, {:grep, regex})
-    IO.binwrite(io, to_print)
+
+    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+    pager.(io, to_print)
   end
 
   def init(config) do
