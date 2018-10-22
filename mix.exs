@@ -40,8 +40,7 @@ defmodule RingLogger.MixProject do
 
   defp package do
     [
-      maintainers: ["Justin Schneck", "Frank Hunleth"],
-      licenses: ["Apache 2.0"],
+      licenses: ["Apache-2.0"],
       links: %{"Github" => "https://github.com/nerves-project/ring_logger"}
     ]
   end
