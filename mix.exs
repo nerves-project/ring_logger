@@ -29,7 +29,7 @@ defmodule RingLogger.MixProject do
   end
 
   defp deps do
-    [{:ex_doc, "~> 0.15", only: :dev}]
+    [{:ex_doc, "~> 0.18", only: :dev, runtime: false}]
   end
 
   defp description do
