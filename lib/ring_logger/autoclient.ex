@@ -60,10 +60,10 @@ defmodule RingLogger.Autoclient do
   @doc """
   Run a regular expression on each entry in the log and print out the matchers.
   """
-  def grep(regex, opts \\ []) do
+  def grep(regex_or_string, opts \\ []) do
     with :ok <- check_server_started(),
          pid <- maybe_create_client(opts),
-         do: Client.grep(pid, regex, opts)
+         do: Client.grep(pid, regex_or_string, opts)
   end
 
   @doc """
