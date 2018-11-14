@@ -121,10 +121,14 @@ defmodule RingLogger.Client do
   """
   @spec grep(GenServer.server(), Regex.t(), keyword()) :: :ok | {:error, term()}
   def grep(client_pid, regex, opts \\ []) do
-    {io, to_print} = GenServer.call(client_pid, {:grep, regex})
+    if Regex.regex?(regex) do
+      {io, to_print} = GenServer.call(client_pid, {:grep, regex})
 
-    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
-    pager.(io, to_print)
+      pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+      pager.(io, to_print)
+    else
+      {:error, :invalid_regex}
+    end
   end
 
   def init(config) do
