@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.6.1
+
+* Bug fixes
+  * Make `RingLogger.grep` friendlier by supporting strings as arguments
+
 ## v0.6.0
 
 Important: `RingLogger.tail` is now `RingLogger.next`. `RingLogger.tail` shows
