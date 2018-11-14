@@ -128,6 +128,22 @@ defmodule RingLoggerTest do
     assert message =~ "[debug] Hello, world"
   end
 
+  test "can grep using a string", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:debug, "Hello")
+    |> handshake_log(:debug, "World")
+
+    RingLogger.grep("H..lo", io: io)
+    assert_receive {:io, message}
+    assert message =~ "[debug] Hello"
+  end
+
+  test "invalid regex returns error", %{io: io} do
+    assert {:error, _} = RingLogger.grep(5, io: io)
+  end
+
   test "can next the log", %{io: io} do
     :ok = RingLogger.attach(io: io)
     handshake_log(io, :debug, "Hello")

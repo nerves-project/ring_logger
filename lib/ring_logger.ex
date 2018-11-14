@@ -127,8 +127,8 @@ defmodule RingLogger do
   * Options from `attach/1`
   * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
   """
-  @spec grep(Regex.t(), [client_option]) :: :ok | {:error, term()}
-  defdelegate grep(regex, opts \\ []), to: Autoclient
+  @spec grep(Regex.t() | String.t(), [client_option]) :: :ok | {:error, term()}
+  defdelegate grep(regex_or_string, opts \\ []), to: Autoclient
 
   @doc """
   Helper method for formatting log messages per the current client's

@@ -119,12 +119,24 @@ defmodule RingLogger.Client do
 
   * `:pager` - an optional 2-arity function that takes an IO device and what to print
   """
-  @spec grep(GenServer.server(), Regex.t(), keyword()) :: :ok | {:error, term()}
-  def grep(client_pid, regex, opts \\ []) do
+  @spec grep(GenServer.server(), String.t() | Regex.t(), keyword()) :: :ok | {:error, term()}
+  def grep(client_pid, regex_or_string, opts \\ [])
+
+  def grep(client_pid, regex_string, opts) when is_binary(regex_string) do
+    with {:ok, regex} <- Regex.compile(regex_string) do
+      grep(client_pid, regex, opts)
+    end
+  end
+
+  def grep(client_pid, %Regex{} = regex, opts) do
     {io, to_print} = GenServer.call(client_pid, {:grep, regex})
 
     pager = Keyword.get(opts, :pager, &IO.binwrite/2)
     pager.(io, to_print)
+  end
+
+  def grep(_client_pid, _regex, _opts) do
+    {:error, :invalid_regex}
   end
 
   def init(config) do
