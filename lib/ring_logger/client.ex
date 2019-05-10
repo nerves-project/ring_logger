@@ -153,7 +153,7 @@ defmodule RingLogger.Client do
   end
 
   def handle_info({:log, msg}, state) do
-    maybe_print(msg, state)
+    _ = maybe_print(msg, state)
     {:noreply, state}
   end
 
