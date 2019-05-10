@@ -1,6 +1,8 @@
 defmodule RingLogger.Server do
   use GenServer
 
+  @moduledoc false
+
   alias RingLogger.Client
 
   @opts [:max_size]
