@@ -408,6 +408,30 @@ defmodule RingLoggerTest do
     assert String.contains?(message, "[info]  Hello")
   end
 
+  test "can save to a file", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+    handshake_log(io, :debug, "Hello")
+
+    filename = "ringlogger-test-save.log"
+    File.rm(filename)
+    :ok = RingLogger.save(filename)
+
+    assert File.exists?(filename)
+
+    contents = File.read!(filename)
+    assert contents =~ "[debug] Hello"
+
+    File.rm!(filename)
+  end
+
+  test "returns error when saving to a bad path", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+    handshake_log(io, :debug, "Hello")
+
+    # This better not exist...
+    assert {:error, :enoent} == RingLogger.save("/a/b/c/d/e/f/g")
+  end
+
   defp capture_log(fun) do
     capture_io(:user, fn ->
       fun.()

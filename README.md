@@ -49,16 +49,15 @@ Logger.configure(RingLogger, max_size: 1024)
 
 ## IEx session usage
 
-See the example project for a hands-on walkthrough of using the logger. Read on
+See the example project for a hands-on walk-through of using the logger. Read on
 for the highlights.
 
 Log messages aren't printed to the console by default. If you're seeing them,
 they may be coming from Elixir's default `:console` logger.
 
-To see log messages as they come in, call `RingLogger.attach()` and
-then to make the log messages stop, call `RingLogger.detach()`. The
-`attach` method takes options if you want to limit the log level, change the
-formatting, etc.
+To see log messages as they come in, call `RingLogger.attach()` and then to make
+the log messages stop, call `RingLogger.detach()`. The `attach` method takes
+options if you want to limit the log level, change the formatting, etc.
 
 Here's an example:
 
@@ -124,8 +123,8 @@ iex> RingLogger.grep(~r/[Nn]eedle/)
 
 ## Module Level Filtering
 
-If you want to filter a module or modules at a particular level you pass
-a map where the key is the module name and value in the level into the
+If you want to filter a module or modules at a particular level you pass a map
+where the key is the module name and value in the level into the
 `:module_levels` option to `RingLogger.attach/1`.
 
 For example:
@@ -136,20 +135,32 @@ iex> RingLogger.attach(module_levels: %{MyModule => :info})
 
 This will ignore all the `:debug` messages from `MyModule`.
 
-Also, it allows for filtering the whole project on a higher level,
-but a particular module, or a subset of modules, to log at a lower
-level like so:
+Also, it allows for filtering the whole project on a higher level, but a
+particular module, or a subset of modules, to log at a lower level like so:
 
 ```elixir
 iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warn)
 ```
 
-In the example above log messages at the `:debug` level will be logged,
-but every other module will be logging at the `:warn` level. You can also
-turn off a module's logging completely by specifying `:none`.
+In the example above log messages at the `:debug` level will be logged, but
+every other module will be logging at the `:warn` level. You can also turn off a
+module's logging completely by specifying `:none`.
 
-As a note if the Elixir `Logger` level is set too low you will miss some
-log messages.
+As a note if the Elixir `Logger` level is set too low you will miss some log
+messages.
+
+## Saving the log
+
+By design, `RingLogger` doesn't save logs. It can be convenient to share the
+current log buffer for later analysis:
+
+```elixir
+iex> RingLogger.save("/tmp/log.txt")
+:ok
+```
+
+Log messages are formatted the same way as the `RingLogger` functions that
+output to the console.
 
 ## Formatting
 

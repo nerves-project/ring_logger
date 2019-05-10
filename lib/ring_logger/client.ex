@@ -113,6 +113,14 @@ defmodule RingLogger.Client do
   end
 
   @doc """
+  Format and save all log messages to the specified path.
+  """
+  @spec save(GenServer.server(), Path.t()) :: :ok | {:error, term()}
+  def save(client_pid, path) do
+    GenServer.call(client_pid, {:save, path})
+  end
+
+  @doc """
   Run a regular expression on each entry in the log and print out the matchers.
 
   Supported options:
@@ -216,6 +224,21 @@ defmodule RingLogger.Client do
   def handle_call({:format, msg}, _from, state) do
     item = format_message(msg, state)
     {:reply, item, state}
+  end
+
+  def handle_call({:save, path}, _from, state) do
+    rc =
+      try do
+        Server.get(0, 0)
+        |> Stream.map(&format_message(&1, state))
+        |> Stream.into(File.stream!(path))
+        |> Stream.run()
+      rescue
+        error in File.Error ->
+          {:error, error.reason}
+      end
+
+    {:reply, rc, state}
   end
 
   defp message_index({_level, {_, _msg, _ts, md}}), do: Keyword.get(md, :index)

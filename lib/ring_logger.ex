@@ -95,6 +95,15 @@ defmodule RingLogger do
   defdelegate next(opts \\ []), to: Autoclient
 
   @doc """
+  Save the contents of the log to the specified path
+
+  The file is overwritten if it already exists. Log message
+  formatting is done similarly to other RingLogger calls.
+  """
+  @spec save(Path.t()) :: :ok | {:error, term()}
+  defdelegate save(path), to: Autoclient
+
+  @doc """
   Print the last n messages in the log.
 
   Options include:

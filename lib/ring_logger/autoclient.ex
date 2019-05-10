@@ -85,6 +85,15 @@ defmodule RingLogger.Autoclient do
          do: Client.format(pid, message)
   end
 
+  @doc """
+  Save the log.
+  """
+  def save(path) do
+    with :ok <- check_server_started(),
+         pid <- maybe_create_client([]),
+         do: Client.save(pid, path)
+  end
+
   defp check_server_started() do
     if !Process.whereis(RingLogger.Server) do
       IO.puts("""
