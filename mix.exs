@@ -11,7 +11,8 @@ defmodule RingLogger.MixProject do
       package: package(),
       docs: docs(),
       elixirc_paths: elixirc_paths(Mix.env()),
-      deps: deps()
+      deps: deps(),
+      dialyzer: dialyzer()
     ]
   end
 
@@ -29,7 +30,10 @@ defmodule RingLogger.MixProject do
   end
 
   defp deps do
-    [{:ex_doc, "~> 0.18", only: :dev, runtime: false}]
+    [
+      {:ex_doc, "~> 0.18", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :test], runtime: false}
+    ]
   end
 
   defp description do
@@ -41,7 +45,13 @@ defmodule RingLogger.MixProject do
   defp package do
     [
       licenses: ["Apache-2.0"],
-      links: %{"Github" => "https://github.com/nerves-project/ring_logger"}
+      links: %{"GitHub" => "https://github.com/nerves-project/ring_logger"}
+    ]
+  end
+
+  defp dialyzer() do
+    [
+      flags: [:race_conditions, :unmatched_returns, :error_handling]
     ]
   end
 end
