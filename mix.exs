@@ -4,7 +4,7 @@ defmodule RingLogger.MixProject do
   def project do
     [
       app: :ring_logger,
-      version: "0.6.1",
+      version: "0.7.0",
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
       description: description(),
