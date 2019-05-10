@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.7.0
+
+* New features
+  * Added `save/1` to save the current set of log messages in the ring buffer to
+    a file
+
 ## v0.6.1
 
 * Bug fixes
