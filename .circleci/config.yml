@@ -1,3 +1,5 @@
+version: 2
+
 install_elixir: &install_elixir
   run:
     name: Install Elixir
@@ -23,12 +25,36 @@ install_system_deps: &install_system_deps
 defaults: &defaults
   working_directory: ~/repo
 
-version: 2
-
 jobs:
+  build_elixir_1_8_otp_21:
+    docker:
+      - image: erlang:21.3
+        environment:
+          ELIXIR_VERSION: 1.8.1-otp-21
+          LC_ALL: C.UTF-8
+    <<: *defaults
+    steps:
+      - checkout
+      - <<: *install_system_deps
+      - <<: *install_elixir
+      - <<: *install_hex_rebar
+      - restore_cache:
+          keys:
+            - v1-mix-cache-{{ checksum "mix.lock" }}
+      - run: mix deps.get
+      - run: mix format --check-formatted
+      - run: mix hex.build
+      - run: mix test
+      - run: mix dialyzer --halt-exit-status
+      - save_cache:
+          key: v1-mix-cache-{{ checksum "mix.lock" }}
+          paths:
+            - _build
+            - deps
+
   build_elixir_1_7_otp_21:
     docker:
-      - image: erlang:21.0.5
+      - image: erlang:21.3
         environment:
           ELIXIR_VERSION: 1.7.3-otp-21
           LC_ALL: C.UTF-8
@@ -92,6 +118,8 @@ workflows:
   version: 2
   build_test:
     jobs:
+      - build_elixir_1_8_otp_21:
+          context: org-global
       - build_elixir_1_7_otp_21:
           context: org-global
       - build_elixir_1_6_otp_21:
