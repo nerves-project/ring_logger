@@ -167,7 +167,7 @@ defmodule RingLogger do
     env = Application.get_env(:logger, __MODULE__, [])
     opts = Keyword.merge(env, opts)
     Application.put_env(:logger, __MODULE__, opts)
-    Server.start_link(opts)
+    {:ok, _pid} = Server.start_link(opts)
     {:ok, configure(opts)}
   end
 
