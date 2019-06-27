@@ -47,7 +47,7 @@ defmodule RingLogger.Client do
     %{MyModule => :error, MyOtherModule => :none}
   * `:application_levels` - a map of log level overrides per application. For example,
     %{:my_app => :error, :my_other_app => :none}. Note log levels set in `:module_levels`
-    will take precendence.
+    will take precedence.
   """
   @spec configure(GenServer.server(), [RingLogger.client_option()]) :: :ok
   def configure(client_pid, config) do
