@@ -432,6 +432,27 @@ defmodule RingLoggerTest do
     assert {:error, :enoent} == RingLogger.save("/a/b/c/d/e/f/g")
   end
 
+  describe "fetching config" do
+    test "can retrieve config for attached client", %{io: io} do
+      :ok = RingLogger.attach(io: io)
+
+      config = [
+        colors: %{debug: :cyan, enabled: true, error: :red, info: :normal, warn: :yellow},
+        format: ["\n", :time, " ", :metadata, "[", :level, "] ", :levelpad, :message, "\n"],
+        io: io,
+        level: :debug,
+        metadata: [],
+        module_levels: %{}
+      ]
+
+      assert RingLogger.config() == config
+    end
+
+    test "returns error when no attached client" do
+      assert RingLogger.config() == {:error, :no_client}
+    end
+  end
+
   defp capture_log(fun) do
     capture_io(:user, fn ->
       fun.()

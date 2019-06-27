@@ -43,6 +43,14 @@ defmodule RingLogger.Client do
   end
 
   @doc """
+  Fetch the current client configuration.
+  """
+  @spec config(pid()) :: [RingLogger.client_option()]
+  def config(client_pid) do
+    GenServer.call(client_pid, :config)
+  end
+
+  @doc """
   Update the client configuration.
 
   Options include:
@@ -60,7 +68,7 @@ defmodule RingLogger.Client do
   """
   @spec configure(GenServer.server(), [RingLogger.client_option()]) :: :ok
   def configure(client_pid, config) do
-    GenServer.call(client_pid, {:config, config})
+    GenServer.call(client_pid, {:configure, config})
   end
 
   @doc """
@@ -174,7 +182,17 @@ defmodule RingLogger.Client do
   end
 
   @impl true
-  def handle_call({:config, config}, _from, state) do
+  def handle_call(:config, _from, state) do
+    config =
+      Map.from_struct(state)
+      |> Map.delete(:index)
+      |> Map.to_list()
+
+    {:reply, config, state}
+  end
+
+  @impl true
+  def handle_call({:configure, config}, _from, state) do
     {:reply, :ok, configure_state(config, state)}
   end
 

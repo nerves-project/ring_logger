@@ -20,6 +20,17 @@ defmodule RingLogger.Autoclient do
   end
 
   @doc """
+  Fetch the current configuration for the attached client.
+  """
+  @spec config() :: [RingLogger.client_option()] | {:error, term()}
+  def config() do
+    case get_client_pid() do
+      nil -> {:error, :no_client}
+      client -> Client.config(client)
+    end
+  end
+
+  @doc """
   Detach from the logger. Log messages will stop being printed to the console.
   """
   @spec detach() :: :ok

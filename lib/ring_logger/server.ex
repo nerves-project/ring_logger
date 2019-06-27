@@ -29,6 +29,14 @@ defmodule RingLogger.Server do
     GenServer.stop(__MODULE__)
   end
 
+  @doc """
+  Fetch the current configuration for the server and any attached clients.
+  """
+  @spec config() :: [RingLogger.server_option()]
+  def config() do
+    GenServer.call(__MODULE__, :config)
+  end
+
   @spec configure([RingLogger.server_option()]) :: :ok
   def configure(opts) do
     GenServer.call(__MODULE__, {:configure, opts})
@@ -65,6 +73,15 @@ defmodule RingLogger.Server do
   @impl true
   def init(opts) do
     {:ok, merge_opts(opts, %State{})}
+  end
+
+  @impl true
+  def handle_call(:config, _from, state) do
+    config =
+      Map.take(state, @opts)
+      |> Map.to_list()
+
+    {:reply, config, state}
   end
 
   @impl true

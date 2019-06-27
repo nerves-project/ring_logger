@@ -82,6 +82,12 @@ defmodule RingLogger do
   defdelegate attach(opts \\ []), to: Autoclient
 
   @doc """
+  Fetch the current configuration for the attached client
+  """
+  @spec config() :: [client_option()]
+  defdelegate config(), to: Autoclient
+
+  @doc """
   Detach the current IEx session from the logger.
   """
   @spec detach() :: :ok
