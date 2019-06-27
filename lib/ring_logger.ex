@@ -180,8 +180,14 @@ defmodule RingLogger do
     env = Application.get_env(:logger, __MODULE__, [])
     opts = Keyword.merge(env, opts)
     Application.put_env(:logger, __MODULE__, opts)
-    {:ok, _pid} = Server.start_link(opts)
-    {:ok, configure(opts)}
+
+    case Server.start_link(opts) do
+      {:ok, _pid} ->
+        {:ok, configure(opts)}
+
+      error ->
+        error
+    end
   end
 
   @impl true
