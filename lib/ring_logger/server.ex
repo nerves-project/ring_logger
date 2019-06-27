@@ -19,22 +19,27 @@ defmodule RingLogger.Server do
               index: 0
   end
 
+  @spec start_link([RingLogger.server_option()]) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  @spec stop() :: :ok
   def stop() do
     GenServer.stop(__MODULE__)
   end
 
+  @spec configure([RingLogger.server_option()]) :: :ok
   def configure(opts) do
     GenServer.call(__MODULE__, {:configure, opts})
   end
 
+  @spec attach_client(pid()) :: :ok
   def attach_client(client_pid) do
     GenServer.call(__MODULE__, {:attach, client_pid})
   end
 
+  @spec detach_client(pid()) :: :ok
   def detach_client(client_pid) do
     GenServer.call(__MODULE__, {:detach, client_pid})
   end
@@ -57,22 +62,27 @@ defmodule RingLogger.Server do
     GenServer.call(__MODULE__, {:tail, n})
   end
 
+  @impl true
   def init(opts) do
     {:ok, merge_opts(opts, %State{})}
   end
 
+  @impl true
   def handle_call({:configure, opts}, _from, state) do
     {:reply, :ok, merge_opts(opts, state)}
   end
 
+  @impl true
   def handle_call({:attach, client_pid}, _from, state) do
     {:reply, :ok, attach_client(client_pid, state)}
   end
 
+  @impl true
   def handle_call({:detach, pid}, _from, state) do
     {:reply, :ok, detach_client(pid, state)}
   end
 
+  @impl true
   def handle_call({:get, start_index, n}, _from, state) do
     resp =
       cond do
@@ -92,20 +102,24 @@ defmodule RingLogger.Server do
     {:reply, paged_resp, state}
   end
 
+  @impl true
   def handle_call({:tail, n}, _from, state) do
     start = max(0, state.size - n)
     {_, last_n} = :queue.split(start, state.buffer)
     {:reply, :queue.to_list(last_n), state}
   end
 
+  @impl true
   def handle_cast({:log, level, message}, state) do
     {:noreply, push(level, message, state)}
   end
 
+  @impl true
   def handle_info({:DOWN, _ref, _, pid, _reason}, state) do
     {:noreply, detach_client(pid, state)}
   end
 
+  @impl true
   def terminate(_reason, state) do
     Enum.each(state.clients, fn {client_pid, _ref} -> Client.stop(client_pid) end)
     :ok

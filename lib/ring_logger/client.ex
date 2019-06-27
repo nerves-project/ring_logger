@@ -22,6 +22,7 @@ defmodule RingLogger.Client do
   Start up a client GenServer. Except for just getting the contents of the ring buffer, you'll
   need to create one of these. See `configure/2` for information on options.
   """
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(config \\ []) do
     GenServer.start_link(__MODULE__, config)
   end
@@ -29,6 +30,7 @@ defmodule RingLogger.Client do
   @doc """
   Stop a client.
   """
+  @spec stop(GenServer.server()) :: :ok
   def stop(client_pid) do
     GenServer.stop(client_pid)
   end
@@ -132,7 +134,8 @@ defmodule RingLogger.Client do
 
   * `:pager` - an optional 2-arity function that takes an IO device and what to print
   """
-  @spec grep(GenServer.server(), String.t() | Regex.t(), keyword()) :: :ok | {:error, term()}
+  @spec grep(GenServer.server(), String.t() | Regex.t(), [RingLogger.client_option()]) ::
+          :ok | {:error, term()}
   def grep(client_pid, regex_or_string, opts \\ [])
 
   def grep(client_pid, regex_string, opts) when is_binary(regex_string) do
@@ -152,6 +155,7 @@ defmodule RingLogger.Client do
     {:error, :invalid_regex}
   end
 
+  @impl true
   def init(config) do
     state = %State{
       io: Keyword.get(config, :io, :stdio),
@@ -165,11 +169,13 @@ defmodule RingLogger.Client do
     {:ok, state}
   end
 
+  @impl true
   def handle_info({:log, msg}, state) do
     _ = maybe_print(msg, state)
     {:noreply, state}
   end
 
+  @impl true
   def handle_call({:config, config}, _from, state) do
     new_config =
       Keyword.drop(config, [:index])
@@ -178,14 +184,17 @@ defmodule RingLogger.Client do
     {:reply, :ok, struct(state, new_config)}
   end
 
+  @impl true
   def handle_call(:attach, _from, state) do
     {:reply, Server.attach_client(self()), state}
   end
 
+  @impl true
   def handle_call(:detach, _from, state) do
     {:reply, Server.detach_client(self()), state}
   end
 
+  @impl true
   def handle_call(:next, _from, state) do
     case Server.get(state.index, 0) do
       [] ->
@@ -205,6 +214,7 @@ defmodule RingLogger.Client do
     end
   end
 
+  @impl true
   def handle_call({:tail, n}, _from, state) do
     to_return =
       Server.tail(n)
@@ -214,10 +224,12 @@ defmodule RingLogger.Client do
     {:reply, {state.io, to_return}, state}
   end
 
+  @impl true
   def handle_call(:reset, _from, state) do
     {:reply, :ok, %{state | index: 0}}
   end
 
+  @impl true
   def handle_call({:grep, regex}, _from, state) do
     to_return =
       Server.get(0, 0)
@@ -229,11 +241,13 @@ defmodule RingLogger.Client do
     {:reply, {state.io, to_return}, state}
   end
 
+  @impl true
   def handle_call({:format, msg}, _from, state) do
     item = format_message(msg, state)
     {:reply, item, state}
   end
 
+  @impl true
   def handle_call({:save, path}, _from, state) do
     rc =
       try do
