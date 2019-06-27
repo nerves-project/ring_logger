@@ -2,12 +2,12 @@ defmodule RingLogger.Client.Test do
   use ExUnit.Case, async: false
   alias RingLogger.Client
 
-  describe "configure a client at runtime" do
-    setup do
-      {:ok, client} = Client.start_link()
-      {:ok, %{client: client}}
-    end
+  setup do
+    {:ok, client} = Client.start_link()
+    {:ok, %{client: client}}
+  end
 
+  describe "configure a client at runtime" do
     test "configure level", %{client: client} do
       Client.configure(client, level: :error)
       assert :error == :sys.get_state(client).level
@@ -75,5 +75,18 @@ defmodule RingLogger.Client.Test do
       assert module_levels[RingLogger] == :info
       assert module_levels[RingLogger.Client] == :debug
     end
+  end
+
+  test "can retrieve configuration", %{client: client} do
+    config = [
+      colors: %{debug: :cyan, enabled: true, error: :red, info: :normal, warn: :yellow},
+      format: ["\n", :time, " ", :metadata, "[", :level, "] ", :levelpad, :message, "\n"],
+      io: :stdio,
+      level: :debug,
+      metadata: [],
+      module_levels: %{}
+    ]
+
+    assert Client.config(client) == config
   end
 end
