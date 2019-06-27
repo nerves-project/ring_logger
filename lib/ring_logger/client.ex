@@ -43,6 +43,11 @@ defmodule RingLogger.Client do
   * `:format` - A custom format string, or a {module, function} tuple (see
     https://hexdocs.pm/logger/master/Logger.html#module-custom-formatting)
   * `:level` - The minimum log level to report.
+  * `:module_levels` - a map of log level overrides per module. For example,
+    %{MyModule => :error, MyOtherModule => :none}
+  * `:application_levels` - a map of log level overrides per application. For example,
+    %{:my_app => :error, :my_other_app => :none}. Note log levels set in `:module_levels`
+    will take precendence.
   """
   @spec configure(GenServer.server(), [RingLogger.client_option()]) :: :ok
   def configure(client_pid, config) do
@@ -154,7 +159,7 @@ defmodule RingLogger.Client do
       metadata: Keyword.get(config, :metadata, []) |> configure_metadata(),
       format: Keyword.get(config, :format) |> configure_formatter(),
       level: Keyword.get(config, :level, :debug),
-      module_levels: Keyword.get(config, :module_levels, %{})
+      module_levels: configure_module_levels(config)
     }
 
     {:ok, state}
@@ -166,7 +171,10 @@ defmodule RingLogger.Client do
   end
 
   def handle_call({:config, config}, _from, state) do
-    new_config = Keyword.drop(config, [:index])
+    new_config =
+      Keyword.drop(config, [:index])
+      |> Keyword.put(:module_levels, configure_module_levels(config))
+
     {:reply, :ok, struct(state, new_config)}
   end
 
@@ -306,6 +314,20 @@ defmodule RingLogger.Client do
   defp configure_formatter(format) do
     Logger.Formatter.compile(format)
   end
+
+  def configure_module_levels(config) do
+    module_levels = Keyword.get(config, :module_levels, %{})
+
+    Keyword.get(config, :application_levels, %{})
+    |> Enum.reduce(module_levels, &add_module_levels_for_application/2)
+  end
+
+  defp add_module_levels_for_application({app, level}, module_levels) do
+    modules_for_application(app)
+    |> Enum.reduce(module_levels, &Map.put_new(&2, &1, level))
+  end
+
+  defp modules_for_application(app), do: Application.spec(app, :modules) || []
 
   defp maybe_print(msg, state) do
     if should_print?(msg, state) do

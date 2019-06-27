@@ -121,7 +121,7 @@ iex> RingLogger.grep(~r/[Nn]eedle/)
 16:55:41.614 [info]  Needle in a haystack
 ```
 
-## Module Level Filtering
+## Module and Application Level Filtering
 
 If you want to filter a module or modules at a particular level you pass a map
 where the key is the module name and value in the level into the
@@ -145,6 +145,24 @@ iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warn)
 In the example above log messages at the `:debug` level will be logged, but
 every other module will be logging at the `:warn` level. You can also turn off a
 module's logging completely by specifying `:none`.
+
+Additionally, you can specify the same options at the application level to
+disable logging for all its modules using the `:application_levels` option
+with OTP application names as the key:
+
+```elixir
+iex> RingLogger.attach(application_levels: %{my_app: :info})
+```
+
+`module_levels` takes precedence in the case of including both module and
+application level filtering:
+
+```elixir
+iex> RingLogger.attach(application_levels: %{my_app: :info}, module_levels: %{MyApp.Important => :debug})
+```
+
+In the above example, all modules of `:my_app` with have a level of `:info` except
+for `MyApp.Important`, which will have a level of `:debug`.
 
 As a note if the Elixir `Logger` level is set too low you will miss some log
 messages.
