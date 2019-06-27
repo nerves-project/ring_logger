@@ -12,6 +12,7 @@ defmodule RingLogger.Autoclient do
   @doc """
   Attach to the logger and print messages as they come in.
   """
+  @spec attach([RingLogger.client_option()]) :: :ok | {:error, term()}
   def attach(opts \\ []) do
     with :ok <- check_server_started(),
          pid <- maybe_create_client(opts),
@@ -21,6 +22,7 @@ defmodule RingLogger.Autoclient do
   @doc """
   Detach from the logger. Log messages will stop being printed to the console.
   """
+  @spec detach() :: :ok
   def detach() do
     case get_client_pid() do
       nil -> :ok
@@ -60,6 +62,7 @@ defmodule RingLogger.Autoclient do
   @doc """
   Run a regular expression on each entry in the log and print out the matchers.
   """
+  @spec grep(String.t() | Regex.t(), [RingLogger.client_option()]) :: :ok | {:error, term()}
   def grep(regex_or_string, opts \\ []) do
     with :ok <- check_server_started(),
          pid <- maybe_create_client(opts),
@@ -70,6 +73,7 @@ defmodule RingLogger.Autoclient do
   Reset the index used to keep track of the position in the log for `tail/1` so
   that the next call to `tail/1` starts back at the oldest entry.
   """
+  @spec reset([RingLogger.client_option()]) :: :ok | {:error, term()}
   def reset(opts \\ []) do
     with :ok <- check_server_started(),
          pid <- maybe_create_client(opts),
