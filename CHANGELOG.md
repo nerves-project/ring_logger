@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.8.0
+
+* New features
+  * Support filtering by OTP application. This uses the same mechanism as
+    per-module filtering by automatically adding in all modules that are part of
+    an OTP application. It is super useful! See the README.md. Thanks to Jon
+    Carstons for adding this feature.
+  * Support setting defaults on RingLogger clients so that you can configure
+    things like a global default to info level messages and then only show
+    debug messages from some applications
+
 ## v0.7.0
 
 * New features
