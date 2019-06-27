@@ -157,16 +157,7 @@ defmodule RingLogger.Client do
 
   @impl true
   def init(config) do
-    state = %State{
-      io: Keyword.get(config, :io, :stdio),
-      colors: configure_colors(config),
-      metadata: Keyword.get(config, :metadata, []) |> configure_metadata(),
-      format: Keyword.get(config, :format) |> configure_formatter(),
-      level: Keyword.get(config, :level, :debug),
-      module_levels: configure_module_levels(config)
-    }
-
-    {:ok, state}
+    {:ok, configure_state(config)}
   end
 
   @impl true
@@ -177,11 +168,7 @@ defmodule RingLogger.Client do
 
   @impl true
   def handle_call({:config, config}, _from, state) do
-    new_config =
-      Keyword.drop(config, [:index])
-      |> Keyword.put(:module_levels, configure_module_levels(config))
-
-    {:reply, :ok, struct(state, new_config)}
+    {:reply, :ok, configure_state(config)}
   end
 
   @impl true
@@ -281,6 +268,20 @@ defmodule RingLogger.Client do
 
   defp apply_format(format, level, msg, ts, metadata) do
     Logger.Formatter.format(format, level, msg, ts, metadata)
+  end
+
+  defp configure_state(config) do
+    defaults = Application.get_all_env(:ring_logger)
+    config = Keyword.merge(defaults, config)
+
+    %State{
+      io: Keyword.get(config, :io, :stdio),
+      colors: configure_colors(config),
+      metadata: Keyword.get(config, :metadata, []) |> configure_metadata(),
+      format: Keyword.get(config, :format) |> configure_formatter(),
+      level: Keyword.get(config, :level, :debug),
+      module_levels: configure_module_levels(config)
+    }
   end
 
   defp configure_metadata(:all), do: :all
