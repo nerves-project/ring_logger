@@ -29,7 +29,7 @@ defmodule RingLogger.Client.Test do
 
     test "configure metadata", %{client: client} do
       Client.configure(client, metadata: %{foo: :bar})
-      assert %{foo: :bar} == :sys.get_state(client).metadata
+      assert [foo: :bar] == :sys.get_state(client).metadata
     end
 
     test "configure io", %{client: client} do
@@ -39,7 +39,7 @@ defmodule RingLogger.Client.Test do
 
     test "configure format", %{client: client} do
       Client.configure(client, format: "Hello")
-      assert "Hello" == :sys.get_state(client).format
+      assert ["Hello"] == :sys.get_state(client).format
     end
 
     test "cannot configure index", %{client: client} do

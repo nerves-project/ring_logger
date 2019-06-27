@@ -1,5 +1,6 @@
 defmodule RingLogger.Client do
   use GenServer
+  require Logger
 
   @moduledoc """
   Interact with the RingLogger
@@ -9,11 +10,17 @@ defmodule RingLogger.Client do
 
   defmodule State do
     @moduledoc false
-    defstruct io: nil,
-              colors: nil,
-              metadata: nil,
-              format: nil,
-              level: nil,
+    defstruct io: :stdio,
+              colors: %{
+                debug: :cyan,
+                info: :normal,
+                warn: :yellow,
+                error: :red,
+                enabled: IO.ANSI.enabled?()
+              },
+              metadata: [],
+              format: Logger.Formatter.compile(nil),
+              level: :debug,
               index: 0,
               module_levels: %{}
   end
@@ -168,7 +175,7 @@ defmodule RingLogger.Client do
 
   @impl true
   def handle_call({:config, config}, _from, state) do
-    {:reply, :ok, configure_state(config)}
+    {:reply, :ok, configure_state(config, state)}
   end
 
   @impl true
@@ -270,26 +277,37 @@ defmodule RingLogger.Client do
     Logger.Formatter.format(format, level, msg, ts, metadata)
   end
 
-  defp configure_state(config) do
+  defp configure_state(config, state \\ %State{}) do
     defaults = Application.get_all_env(:ring_logger)
-    config = Keyword.merge(defaults, config)
 
-    %State{
-      io: Keyword.get(config, :io, :stdio),
-      colors: configure_colors(config),
-      metadata: Keyword.get(config, :metadata, []) |> configure_metadata(),
-      format: Keyword.get(config, :format) |> configure_formatter(),
-      level: Keyword.get(config, :level, :debug),
-      module_levels: configure_module_levels(config)
-    }
+    config =
+      Keyword.merge(defaults, config)
+      |> Keyword.drop([:index])
+      |> Enum.map(&configure_option(&1))
+
+    config = Keyword.put(config, :module_levels, configure_module_levels(config))
+
+    struct(state, config)
   end
+
+  defp configure_option({:colors, colors}) do
+    {:colors, configure_colors(colors)}
+  end
+
+  defp configure_option({:metadata, metadata}) do
+    {:metadata, configure_metadata(metadata)}
+  end
+
+  defp configure_option({:format, format}) do
+    {:format, configure_formatter(format)}
+  end
+
+  defp configure_option(opt), do: opt
 
   defp configure_metadata(:all), do: :all
   defp configure_metadata(metadata), do: Enum.reverse(metadata)
 
-  defp configure_colors(config) do
-    colors = Keyword.get(config, :colors, [])
-
+  defp configure_colors(colors) when is_list(colors) do
     %{
       debug: Keyword.get(colors, :debug, :cyan),
       info: Keyword.get(colors, :info, :normal),
@@ -297,6 +315,22 @@ defmodule RingLogger.Client do
       error: Keyword.get(colors, :error, :red),
       enabled: Keyword.get(colors, :enabled, IO.ANSI.enabled?())
     }
+  end
+
+  defp configure_colors(colors) when is_map(colors) do
+    configure_colors(Map.to_list(colors))
+  end
+
+  defp configure_colors(colors) do
+    Logger.warn("""
+    unknown RingLogger.Client colors option:
+
+      #{inspect(colors)}
+
+    Using defaults...
+    """)
+
+    configure_colors([])
   end
 
   defp meet_level?(_lvl, nil), do: true
