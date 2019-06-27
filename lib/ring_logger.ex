@@ -49,6 +49,7 @@ defmodule RingLogger do
           | {:format, String.t() | custom_formatter}
           | {:level, Logger.level()}
           | {:module_levels, map()}
+          | {:application_levels, map()}
 
   @typedoc "A tuple holding a raw, unformatted log entry"
   @type entry ::
@@ -73,6 +74,9 @@ defmodule RingLogger do
     application's `:level` setting filters log messages prior to `RingLogger`.
   * `:module_levels` - a map of log level overrides per module. For example,
     %{MyModule => :error, MyOtherModule => :none}
+  * `:application_levels` - a map of log level overrides per application. For example,
+    %{:my_app => :error, :my_other_app => :none}. Note log levels set in `:module_levels`
+    will take precendence.
   """
   @spec attach([client_option]) :: :ok
   defdelegate attach(opts \\ []), to: Autoclient

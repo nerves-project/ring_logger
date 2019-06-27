@@ -46,5 +46,34 @@ defmodule RingLogger.Client.Test do
       Client.configure(client, index: :foo)
       refute :foo == :sys.get_state(client).index
     end
+
+    test "configures with module_levels key", %{client: client} do
+      module_levels = %{RingLogger => :info}
+
+      Client.configure(client, module_levels: module_levels)
+
+      assert :sys.get_state(client).module_levels == module_levels
+    end
+
+    test "configures module_levels from application_levels", %{client: client} do
+      Client.configure(client, application_levels: %{ring_logger: :debug})
+
+      module_levels = :sys.get_state(client).module_levels
+
+      assert module_levels[RingLogger] == :debug
+      assert module_levels[RingLogger.Client] == :debug
+    end
+
+    test "configuring module_level overwrites application_levels", %{client: client} do
+      Client.configure(client,
+        application_levels: %{ring_logger: :debug},
+        module_levels: %{RingLogger => :info}
+      )
+
+      module_levels = :sys.get_state(client).module_levels
+
+      assert module_levels[RingLogger] == :info
+      assert module_levels[RingLogger.Client] == :debug
+    end
   end
 end
