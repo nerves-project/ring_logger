@@ -322,13 +322,14 @@ defmodule RingLogger.Client do
   end
 
   defp configure_colors(colors) do
-    Logger.warn("""
-    unknown RingLogger.Client colors option:
+    _ =
+      Logger.warn("""
+      unknown RingLogger.Client colors option:
 
-      #{inspect(colors)}
+        #{inspect(colors)}
 
-    Using defaults...
-    """)
+      Using defaults...
+      """)
 
     configure_colors([])
   end
