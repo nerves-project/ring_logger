@@ -1,10 +1,12 @@
 defmodule RingLogger.MixProject do
   use Mix.Project
 
+  @version "0.7.0"
+
   def project do
     [
       app: :ring_logger,
-      version: "0.7.0",
+      version: @version,
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
       description: description(),
@@ -26,12 +28,17 @@ defmodule RingLogger.MixProject do
   end
 
   defp docs do
-    [extras: ["README.md"], main: "readme"]
+    [
+      extras: ["README.md"],
+      main: "readme",
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/nerves-project/ring_logger"
+    ]
   end
 
   defp deps do
     [
-      {:ex_doc, "~> 0.18", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.18", only: :docs, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.6", only: :dev, runtime: false}
     ]
   end
