@@ -51,7 +51,7 @@ Or you can start the backend manually by running the following:
 
 ```elixir
 Logger.add_backend(RingLogger)
-Logger.configure(RingLogger, max_size: 1024)
+Logger.configure_backend(RingLogger, max_size: 1024)
 ```
 
 ## IEx session usage
