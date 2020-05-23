@@ -2,20 +2,15 @@ defmodule RingLogger.Server do
   use GenServer
 
   @moduledoc false
+  @default_max_size 1024
 
-  alias RingLogger.Client
-
-  @opts [:max_size]
+  alias RingLogger.{CircularBuffer, Client}
 
   defmodule State do
     @moduledoc false
 
-    @default_max_size 1024
-
     defstruct clients: [],
-              buffer: :queue.new(),
-              size: 0,
-              max_size: @default_max_size,
+              cb: nil,
               index: 0
   end
 
@@ -77,24 +72,32 @@ defmodule RingLogger.Server do
 
   @impl GenServer
   def init(opts) do
-    {:ok, merge_opts(opts, %State{})}
+    max_size = Keyword.get(opts, :max_size, @default_max_size)
+
+    {:ok, %State{cb: CircularBuffer.new(max_size)}}
   end
 
   @impl GenServer
   def handle_call(:clear, _from, state) do
-    {:reply, :ok, %{state | buffer: :queue.new(), size: 0, index: state.index + state.size}}
+    max_size = state.cb.max_size
+
+    {:reply, :ok, %{state | cb: CircularBuffer.new(max_size)}}
   end
 
   def handle_call(:config, _from, state) do
-    config =
-      Map.take(state, @opts)
-      |> Map.to_list()
+    config = %{max_size: state.cb.max_size}
 
     {:reply, config, state}
   end
 
   def handle_call({:configure, opts}, _from, state) do
-    {:reply, :ok, merge_opts(opts, state)}
+    case Keyword.get(opts, :max_size) do
+      nil ->
+        {:reply, :ok, state}
+
+      max_size ->
+        {:reply, :ok, %State{state | cb: CircularBuffer.new(max_size)}}
+    end
   end
 
   def handle_call({:attach, client_pid}, _from, state) do
@@ -105,29 +108,30 @@ defmodule RingLogger.Server do
     {:reply, :ok, detach_client(pid, state)}
   end
 
+  def handle_call({:get, start_index, 0}, _from, state) do
+    first_index = state.index - Enum.count(state.cb)
+    adjusted_start_index = max(start_index - first_index, 0)
+    items = Enum.drop(state.cb, adjusted_start_index)
+
+    {:reply, items, state}
+  end
+
   def handle_call({:get, start_index, n}, _from, state) do
-    resp =
-      cond do
-        start_index <= state.index ->
-          :queue.to_list(state.buffer)
+    first_index = state.index - Enum.count(state.cb)
+    last_index = state.index
 
-        start_index >= state.index + state.size ->
-          []
+    {adjusted_start_index, adjusted_n} =
+      {start_index, n}
+      |> adjust_left(first_index)
+      |> adjust_right(last_index)
 
-        true ->
-          {_, buffer_range} = :queue.split(start_index - state.index, state.buffer)
-          :queue.to_list(buffer_range)
-      end
+    items = Enum.slice(state.cb, adjusted_start_index, adjusted_n)
 
-    paged_resp = if n <= 0, do: resp, else: Enum.take(resp, n)
-
-    {:reply, paged_resp, state}
+    {:reply, items, state}
   end
 
   def handle_call({:tail, n}, _from, state) do
-    start = max(0, state.size - n)
-    {_, last_n} = :queue.split(start, state.buffer)
-    {:reply, :queue.to_list(last_n), state}
+    {:reply, Enum.take(state.cb, -n), state}
   end
 
   @impl GenServer
@@ -145,6 +149,18 @@ defmodule RingLogger.Server do
     Enum.each(state.clients, fn {client_pid, _ref} -> Client.stop(client_pid) end)
     :ok
   end
+
+  defp adjust_left({offset, n}, i) when i > offset do
+    {i, max(0, n - (i - offset))}
+  end
+
+  defp adjust_left(loc, _i), do: loc
+
+  defp adjust_right({offset, n}, i) when i < offset + n do
+    {offset, i - offset}
+  end
+
+  defp adjust_right(loc, _i), do: loc
 
   defp attach_client(client_pid, state) do
     if !client_info(client_pid, state) do
@@ -172,46 +188,14 @@ defmodule RingLogger.Server do
     List.keyfind(state.clients, client_pid, 0)
   end
 
-  defp merge_opts(opts, state) do
-    opts =
-      opts
-      |> Keyword.take(@opts)
-      |> Enum.into(%{})
-
-    state
-    |> Map.merge(opts)
-    |> trim
-  end
-
-  defp trim(%{max_size: max_size, size: size, buffer: buffer} = state)
-       when size > max_size do
-    trim = max_size - size
-
-    buffer = Enum.reduce(1..trim, buffer, fn _, buf -> :queue.drop(buf) end)
-
-    %{state | buffer: buffer, size: size}
-  end
-
-  defp trim(state), do: state
-
   defp push(level, {mod, msg, ts, md}, state) do
-    index = state.index + state.size
+    index = state.index
     log_entry = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
 
     Enum.each(state.clients, &send_log(&1, log_entry))
 
-    ring_insert(state, log_entry)
-  end
-
-  defp ring_insert(state, item) do
-    if state.size == state.max_size do
-      buffer = :queue.drop(state.buffer)
-      buffer = :queue.in(item, buffer)
-      %{state | buffer: buffer, index: state.index + 1}
-    else
-      buffer = :queue.in(item, state.buffer)
-      %{state | buffer: buffer, size: state.size + 1}
-    end
+    new_cb = CircularBuffer.insert(state.cb, log_entry)
+    %{state | cb: new_cb, index: index + 1}
   end
 
   defp send_log({client_pid, _ref}, log_entry) do
