@@ -14,7 +14,12 @@ defmodule RingLogger.MixProject do
       docs: docs(),
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
-      dialyzer: dialyzer()
+      dialyzer: dialyzer(),
+      preferred_cli_env: %{
+        docs: :docs,
+        "hex.publish": :docs,
+        "hex.build": :docs
+      }
     ]
   end
 
