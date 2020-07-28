@@ -70,12 +70,21 @@ defmodule RingLogger.Server do
     GenServer.call(__MODULE__, {:tail, n})
   end
 
+  @spec clear() :: :ok
+  def clear() do
+    GenServer.call(__MODULE__, :clear)
+  end
+
   @impl GenServer
   def init(opts) do
     {:ok, merge_opts(opts, %State{})}
   end
 
   @impl GenServer
+  def handle_call(:clear, _from, state) do
+    {:reply, :ok, %{state | buffer: :queue.new(), size: 0, index: state.index + state.size}}
+  end
+
   def handle_call(:config, _from, state) do
     config =
       Map.take(state, @opts)
