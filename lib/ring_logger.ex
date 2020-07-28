@@ -128,7 +128,7 @@ defmodule RingLogger do
   def tail(n, opts), do: Autoclient.tail(n, opts)
 
   @doc """
-  Reset the index into the log for `tail/1` to the oldest entry.
+  Reset the index into the log for `next/1` to the oldest entry.
   """
   @spec reset([client_option]) :: :ok | {:error, term()}
   defdelegate reset(opts \\ []), to: Autoclient
