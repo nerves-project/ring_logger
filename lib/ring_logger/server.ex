@@ -190,7 +190,7 @@ defmodule RingLogger.Server do
 
   defp push(level, {mod, msg, ts, md}, state) do
     index = state.index
-    log_entry = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
+    log_entry = {level, {mod, msg, ts, [{:index, index} | md]}}
 
     Enum.each(state.clients, &send_log(&1, log_entry))
 
