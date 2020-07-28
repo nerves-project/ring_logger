@@ -70,12 +70,12 @@ defmodule RingLogger.Server do
     GenServer.call(__MODULE__, {:tail, n})
   end
 
-  @impl true
+  @impl GenServer
   def init(opts) do
     {:ok, merge_opts(opts, %State{})}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:config, _from, state) do
     config =
       Map.take(state, @opts)
@@ -84,22 +84,18 @@ defmodule RingLogger.Server do
     {:reply, config, state}
   end
 
-  @impl true
   def handle_call({:configure, opts}, _from, state) do
     {:reply, :ok, merge_opts(opts, state)}
   end
 
-  @impl true
   def handle_call({:attach, client_pid}, _from, state) do
     {:reply, :ok, attach_client(client_pid, state)}
   end
 
-  @impl true
   def handle_call({:detach, pid}, _from, state) do
     {:reply, :ok, detach_client(pid, state)}
   end
 
-  @impl true
   def handle_call({:get, start_index, n}, _from, state) do
     resp =
       cond do
@@ -119,24 +115,23 @@ defmodule RingLogger.Server do
     {:reply, paged_resp, state}
   end
 
-  @impl true
   def handle_call({:tail, n}, _from, state) do
     start = max(0, state.size - n)
     {_, last_n} = :queue.split(start, state.buffer)
     {:reply, :queue.to_list(last_n), state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:log, level, message}, state) do
     {:noreply, push(level, message, state)}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:DOWN, _ref, _, pid, _reason}, state) do
     {:noreply, detach_client(pid, state)}
   end
 
-  @impl true
+  @impl GenServer
   def terminate(_reason, state) do
     Enum.each(state.clients, fn {client_pid, _ref} -> Client.stop(client_pid) end)
     :ok

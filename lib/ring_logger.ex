@@ -176,7 +176,7 @@ defmodule RingLogger do
   #
   # Logger backend callbacks
   #
-  @impl true
+  @impl :gen_event
   def init(__MODULE__) do
     init({__MODULE__, []})
   end
@@ -196,7 +196,7 @@ defmodule RingLogger do
     end
   end
 
-  @impl true
+  @impl :gen_event
   def handle_call({:configure, opts}, _state) do
     env = Application.get_env(:logger, __MODULE__, [])
     opts = Keyword.merge(env, opts)
@@ -204,31 +204,30 @@ defmodule RingLogger do
     {:ok, :ok, configure(opts)}
   end
 
-  @impl true
+  @impl :gen_event
   def handle_event({level, _group_leader, message}, state) do
     Server.log(level, message)
     {:ok, state}
   end
 
-  @impl true
   def handle_event(:flush, state) do
     # No flushing needed for RingLogger
     {:ok, state}
   end
 
-  @impl true
+  @impl :gen_event
   def handle_info(_, state) do
     # Ignore everything else since it's hard to justify RingLogger crashing
     # on a bad message.
     {:ok, state}
   end
 
-  @impl true
+  @impl :gen_event
   def code_change(_old_vsn, state, _extra) do
     {:ok, state}
   end
 
-  @impl true
+  @impl :gen_event
   def terminate(_reason, _state) do
     Server.stop()
     :ok

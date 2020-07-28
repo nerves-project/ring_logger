@@ -170,18 +170,18 @@ defmodule RingLogger.Client do
     {:error, :invalid_regex}
   end
 
-  @impl true
+  @impl GenServer
   def init(config) do
     {:ok, configure_state(config)}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:log, msg}, state) do
     _ = maybe_print(msg, state)
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:config, _from, state) do
     config =
       Map.from_struct(state)
@@ -191,22 +191,18 @@ defmodule RingLogger.Client do
     {:reply, config, state}
   end
 
-  @impl true
   def handle_call({:configure, config}, _from, state) do
     {:reply, :ok, configure_state(config, state)}
   end
 
-  @impl true
   def handle_call(:attach, _from, state) do
     {:reply, Server.attach_client(self()), state}
   end
 
-  @impl true
   def handle_call(:detach, _from, state) do
     {:reply, Server.detach_client(self()), state}
   end
 
-  @impl true
   def handle_call(:next, _from, state) do
     case Server.get(state.index, 0) do
       [] ->
@@ -226,7 +222,6 @@ defmodule RingLogger.Client do
     end
   end
 
-  @impl true
   def handle_call({:tail, n}, _from, state) do
     to_return =
       Server.tail(n)
@@ -236,12 +231,10 @@ defmodule RingLogger.Client do
     {:reply, {state.io, to_return}, state}
   end
 
-  @impl true
   def handle_call(:reset, _from, state) do
     {:reply, :ok, %{state | index: 0}}
   end
 
-  @impl true
   def handle_call({:grep, regex}, _from, state) do
     to_return =
       Server.get(0, 0)
@@ -253,13 +246,11 @@ defmodule RingLogger.Client do
     {:reply, {state.io, to_return}, state}
   end
 
-  @impl true
   def handle_call({:format, msg}, _from, state) do
     item = format_message(msg, state)
     {:reply, item, state}
   end
 
-  @impl true
   def handle_call({:save, path}, _from, state) do
     rc =
       try do
