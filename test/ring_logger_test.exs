@@ -269,7 +269,7 @@ defmodule RingLoggerTest do
 
     assert_receive {:io, messages}
 
-    assert messages =~ "Got 107 characters"
+    assert messages =~ "Got 139 characters"
   end
 
   test "tail supports passing a custom pager", %{io: io} do
