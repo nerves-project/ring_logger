@@ -206,7 +206,10 @@ defmodule RingLogger do
 
   @impl :gen_event
   def handle_event({level, _group_leader, message}, state) do
-    Server.log(level, message)
+    # Messages eventually are flattened. Flattening them immediately saves time
+    # later and appears to measurably reduce memory usage and reduction count
+    # in RingLogger.Server in production devices.
+    Server.log(level, flatten(message))
     {:ok, state}
   end
 
@@ -231,5 +234,9 @@ defmodule RingLogger do
   def terminate(_reason, _state) do
     Server.stop()
     :ok
+  end
+
+  defp flatten({mod, msg, ts, md}) do
+    {mod, IO.iodata_to_binary(msg), ts, md}
   end
 end
