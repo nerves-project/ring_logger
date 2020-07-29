@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.8.1
+
+* New features
+  * `RingLogger.next/1` now outputs a summary line that says how many log
+    messages were recented and how many were filtered. This makes it easier to
+    identify when the ring buffer is being overtaken by filtered log entries
+
+* Improvements
+  * Several internal refactorings were made to reduce memory usage and
+    the number of reductions run in the `RingLogger.Server` GenServer. This
+    makes a noticeable improvement when monitoring resource usage on a device.
+  * Improved tests to verify more edge conditions
+
 ## v0.8.0
 
 * New features
