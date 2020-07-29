@@ -207,18 +207,20 @@ defmodule RingLogger.Client do
     case Server.get(state.index, 0) do
       [] ->
         # No messages
-        {:reply, {state.io, []}, state}
+        {:reply, {state.io, "No new messages.\n"}, state}
 
       messages ->
         to_return =
           messages
-          |> Enum.filter(fn message -> should_print?(message, state) end)
-          |> Enum.map(fn message -> format_message(message, state) end)
+          |> Enum.filter(&should_print?(&1, state))
+          |> Enum.map(&format_message(&1, state))
 
         last_message = List.last(messages)
         next_index = message_index(last_message) + 1
 
-        {:reply, {state.io, to_return}, %{state | index: next_index}}
+        rc = [to_return, summary(messages, to_return)]
+
+        {:reply, {state.io, rc}, %{state | index: next_index}}
     end
   end
 
@@ -412,5 +414,13 @@ defmodule RingLogger.Client do
       _ ->
         false
     end
+  end
+
+  defp summary(messages, []) do
+    "All #{Enum.count(messages)} new messages filtered out.\n"
+  end
+
+  defp summary(messages, to_return) do
+    "\n#{Enum.count(to_return)} out of #{Enum.count(messages)} new messages shown.\n"
   end
 end
