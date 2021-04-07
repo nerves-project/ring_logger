@@ -46,7 +46,7 @@ defmodule RingLogger.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.18", only: :docs, runtime: false},
-      {:dialyxir, "~> 1.0.0", only: :dev, runtime: false}
+      {:dialyxir, "~> 1.1.0", only: :dev, runtime: false}
     ]
   end
 
