@@ -367,7 +367,7 @@ defmodule RingLogger.Client do
 
   defp color_event(data, level, %{enabled: true} = colors, md) do
     color = md[:ansi_color] || Map.fetch!(colors, level)
-    [IO.ANSI.format_fragment(color, true), data | IO.ANSI.reset()]
+    [IO.ANSI.format_fragment(color, true), data, IO.ANSI.reset()]
   end
 
   defp configure_formatter({mod, fun}), do: {mod, fun}
