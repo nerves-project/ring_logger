@@ -4,7 +4,7 @@ defmodule RingLogger.Server do
   @moduledoc false
   @default_max_size 1024
 
-  alias RingLogger.{CircularBuffer, Client}
+  alias RingLogger.Client
 
   defmodule State do
     @moduledoc false
