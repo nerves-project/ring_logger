@@ -30,7 +30,7 @@ jobs:
     docker:
       - image: erlang:24.0
         environment:
-          ELIXIR_VERSION: 1.12.0-rc.1-otp-24
+          ELIXIR_VERSION: 1.12.1-otp-24
           LC_ALL: C.UTF-8
     <<: *defaults
     steps:
