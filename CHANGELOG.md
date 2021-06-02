@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.8.2
+
+* Improvements
+  * Circular buffer improvements are all upstream in the `circular_buffer`
+    library, so this release makes it official by deleting the internal
+    implementation and using the hex package.
+
 ## v0.8.1
 
 * New features
