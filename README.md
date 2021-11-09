@@ -264,3 +264,21 @@ iex> RingLogger.get
    ]}
 ]
 ```
+
+## Testing
+
+One thing to bear in mind is that the order in which logs appear is not guaranteed in any way. This means if you are using RingLogger in tests be sure to not accidentally rely on ordering that doesn't exist. For example, don't do this:
+
+```elixir
+# Don't do this because the order of the logs is not guaranteed
+# so if tests are running asynchronously you can end up with flickering tests
+test "my function logs a thing" do
+  My.function(1)
+  Logger.flush()
+  log_line = List.last(RingLogger.get())
+  assert {:info, {Logger, "My log", _log_datetime, _metadata}} = log_line
+end
+```
+
+This relies on the log line you are expecting being the last log line emitted, but you have no guarantee that will be the case if your tests are running asynchronously.
+
