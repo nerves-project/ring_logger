@@ -289,7 +289,7 @@ defmodule RingLogger.Client do
   end
 
   defp configure_state(config, state \\ %State{}) do
-    defaults = Application.get_all_env(:ring_logger)
+    defaults = Application.get_env(:logger, RingLogger)
 
     config =
       Keyword.merge(defaults, config)
