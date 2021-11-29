@@ -106,9 +106,9 @@ defmodule RingLogger.Client.Test do
   end
 
   @tag application_envs: [
-    ring_logger: [colors: %{debug: :green, error: :blue}],
-    logger: [{RingLogger, [colors: %{debug: :cyan}]}]
-  ]
+         ring_logger: [colors: %{debug: :green, error: :blue}],
+         logger: [{RingLogger, [colors: %{debug: :cyan}]}]
+       ]
   test "non-deprecated config override deprecated config" do
     # Note: `error: :blue` in configuration will be overwritten because maps are not deep merged
     ExUnit.CaptureIO.capture_io(:stderr, fn ->

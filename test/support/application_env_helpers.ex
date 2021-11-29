@@ -8,7 +8,8 @@ defmodule RingLogger.ApplicationEnvHelpers do
   @tag application_envs: [ring_logger: [colors: %{debug: :green, error: :blue}]]
   ```
   """
-  def with_application_env(%{application_envs: application_envs} = context, on_exit) when is_function(on_exit, 1) do
+  def with_application_env(%{application_envs: application_envs} = context, on_exit)
+      when is_function(on_exit, 1) do
     if context.async, do: raise("Not compatible with `async: true`")
 
     for {app, envs} <- application_envs do
