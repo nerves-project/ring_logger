@@ -289,7 +289,7 @@ defmodule RingLogger.Client do
   end
 
   defp configure_state(config, state \\ %State{}) do
-    defaults = Application.get_env(:logger, RingLogger)
+    defaults = build_defaults()
 
     config =
       Keyword.merge(defaults, config)
@@ -299,6 +299,34 @@ defmodule RingLogger.Client do
     config = Keyword.put(config, :module_levels, configure_module_levels(config))
 
     struct(state, config)
+  end
+
+  defp build_defaults do
+    deprecated_defaults = Application.get_all_env(:ring_logger)
+    defaults = Application.get_env(:logger, RingLogger, [])
+    merge_deprecated_defaults(deprecated_defaults, defaults)
+  end
+
+  defp merge_deprecated_defaults([], defaults), do: defaults
+
+  defp merge_deprecated_defaults(deprecated_defaults, defaults) do
+    message = """
+    Setting RingLogger configuration under `:ring_logger` is deprecated. Instead configuration should be set under :logger, RingLogger
+
+    In your config.exs or other configuration file change:
+
+        config :ring_logger,
+          <configurations>
+
+    To:
+
+        config :logger, RingLogger,
+          <configurations>
+    """
+
+    IO.warn(message)
+
+    Keyword.merge(deprecated_defaults, defaults)
   end
 
   defp configure_option({:colors, colors}) do

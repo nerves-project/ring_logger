@@ -7,6 +7,11 @@ defmodule RingLogger.Client.Test do
     {:ok, %{client: client}}
   end
 
+  setup(context) do
+    RingLogger.ApplicationEnvHelpers.with_application_env(context, &on_exit/1)
+    :ok
+  end
+
   describe "configure a client at runtime" do
     test "configure level", %{client: client} do
       Client.configure(client, level: :error)
@@ -88,5 +93,29 @@ defmodule RingLogger.Client.Test do
     ]
 
     assert Client.config(client) == config
+  end
+
+  @tag application_envs: [ring_logger: [colors: %{debug: :green, error: :blue}]]
+  test "warns on deprecated config" do
+    io_warning =
+      ExUnit.CaptureIO.capture_io(:stderr, fn ->
+        Client.start_link()
+      end)
+
+    assert io_warning =~ ~r/:ring_logger.*is deprecated/
+  end
+
+  @tag application_envs: [
+    ring_logger: [colors: %{debug: :green, error: :blue}],
+    logger: [{RingLogger, [colors: %{debug: :cyan}]}]
+  ]
+  test "non-deprecated config override deprecated config" do
+    # Note: `error: :blue` in configuration will be overwritten because maps are not deep merged
+    ExUnit.CaptureIO.capture_io(:stderr, fn ->
+      {:ok, client} = Client.start_link()
+
+      assert %{debug: :cyan} = :sys.get_state(client).colors
+      assert :sys.get_state(client).level == :debug
+    end)
   end
 end
