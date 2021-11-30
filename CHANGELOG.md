@@ -1,5 +1,15 @@
 # Changelog
 
+This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## v0.8.3
+
+* Fixes
+  * Pull all application environment configuration from `:logger, RingLogger`
+    rather than some from there and some from `:ring_logger`. Adding
+    configuration under `:ring_logger` is still supported, but prints a
+    deprecation warning. Thanks to Jason Axelson for this fix.
+
 ## v0.8.2
 
 * Improvements
