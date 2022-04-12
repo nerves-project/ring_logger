@@ -303,7 +303,11 @@ defmodule RingLogger.Client do
 
   defp build_defaults do
     deprecated_defaults = Application.get_all_env(:ring_logger)
-    defaults = Application.get_env(:logger, RingLogger, [])
+
+    defaults =
+      Application.get_env(:logger, RingLogger, [])
+      |> Keyword.put_new(:colors, [])
+
     merge_deprecated_defaults(deprecated_defaults, defaults)
   end
 
