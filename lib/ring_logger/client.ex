@@ -239,11 +239,12 @@ defmodule RingLogger.Client do
 
   def handle_call({:grep, regex}, _from, state) do
     to_return =
-      Server.get(0, 0)
-      |> Enum.filter(fn message -> should_print?(message, state) end)
-      |> Enum.map(fn message -> format_message(message, state) end)
-      |> Enum.map(&IO.iodata_to_binary/1)
-      |> Enum.filter(&Regex.match?(regex, &1))
+      for message <- Server.get(0, 0),
+          should_print?(message, state),
+          formatted = format_message(message, state),
+          bin = IO.iodata_to_binary(formatted),
+          Regex.match?(regex, bin),
+          do: maybe_color_grep(bin, regex, state)
 
     {:reply, {state.io, to_return}, state}
   end
@@ -451,4 +452,10 @@ defmodule RingLogger.Client do
   defp summary(messages, to_return) do
     "\n#{Enum.count(to_return)} out of #{Enum.count(messages)} new messages shown.\n"
   end
+
+  defp maybe_color_grep(bin, regex, %{colors: %{enabled: true}}) do
+    Regex.replace(regex, bin, &IO.ANSI.format_fragment([:inverse, &1, :inverse_off], true))
+  end
+
+  defp maybe_color_grep(bin, _regex, _state), do: bin
 end

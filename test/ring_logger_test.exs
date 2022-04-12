@@ -111,7 +111,7 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Hello")
     |> handshake_log(:debug, "World")
 
-    RingLogger.grep(~r/H..lo/, io: io)
+    RingLogger.grep(~r/H..lo/, io: io, colors: [enabled: false])
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
   end
@@ -123,7 +123,7 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, ["Hello", ",", ' world'])
     |> handshake_log(:debug, "World")
 
-    RingLogger.grep(~r/H..lo/, io: io)
+    RingLogger.grep(~r/H..lo/, io: io, colors: [enabled: false])
     assert_receive {:io, message}
     assert message =~ "[debug] Hello, world"
   end
@@ -135,9 +135,21 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Hello")
     |> handshake_log(:debug, "World")
 
-    RingLogger.grep("H..lo", io: io)
+    RingLogger.grep("H..lo", io: io, colors: [enabled: false])
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
+  end
+
+  test "can colorize grep log", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:debug, "Hello")
+    |> handshake_log(:debug, "World")
+
+    RingLogger.grep(~r/H..lo/, io: io, colors: [enabled: true])
+    assert_receive {:io, message}
+    assert message =~ "[debug] #{IO.ANSI.inverse()}Hello#{IO.ANSI.inverse_off()}"
   end
 
   test "invalid regex returns error", %{io: io} do
@@ -309,7 +321,7 @@ defmodule RingLoggerTest do
 
     assert_receive {:io, messages}
 
-    assert messages =~ "Got 70 characters"
+    assert messages =~ "Got 88 characters"
   end
 
   test "buffer start index is less then buffer_start_index", %{io: io} do
@@ -403,7 +415,7 @@ defmodule RingLoggerTest do
     :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :info})
     handshake_log(io, :info, "Hello")
 
-    RingLogger.grep(~r/H..lo/, io: io)
+    RingLogger.grep(~r/H..lo/, io: io, colors: [enabled: false])
     assert_receive {:io, message}
     assert String.contains?(message, "[info]  Hello")
   end
