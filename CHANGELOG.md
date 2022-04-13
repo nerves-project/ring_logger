@@ -2,6 +2,14 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.4
+
+* Fixes
+  * Default color enabled option now correctly evaluated at runtime for the active IO
+
+* Improvements
+  * `RingLogger.grep` will now highlight matches in the output if color is enabled
+
 ## v0.8.3
 
 * Fixes
