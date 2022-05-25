@@ -78,13 +78,13 @@ defmodule RingLogger do
     %{:my_app => :error, :my_other_app => :none}. Note log levels set in `:module_levels`
     will take precedence.
   """
-  @spec attach([client_option]) :: :ok
+  @spec attach([client_option]) :: :ok | {:error, :no_client}
   defdelegate attach(opts \\ []), to: Autoclient
 
   @doc """
   Fetch the current configuration for the attached client
   """
-  @spec config() :: [client_option()]
+  @spec config() :: [client_option()] | {:error, :no_client}
   defdelegate config(), to: Autoclient
 
   @doc """
@@ -155,7 +155,7 @@ defmodule RingLogger do
   Helper method for formatting log messages per the current client's
   configuration.
   """
-  @spec format(entry()) :: :ok
+  @spec format(entry()) :: :ok | {:error, :no_client}
   defdelegate format(message), to: Autoclient
 
   @doc """
@@ -192,6 +192,9 @@ defmodule RingLogger do
     case Server.start_link(opts) do
       {:ok, _pid} ->
         {:ok, configure(opts)}
+
+      err when is_atom(err) ->
+        {:error, err}
 
       error ->
         error
