@@ -145,6 +145,8 @@ defmodule RingLogger do
 
   * Options from `attach/1`
   * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
+  * `:before` - Number of lines before the match to include
+  * `:after` - NUmber of lines after the match to include
   """
   @spec grep(Regex.t() | String.t(), [client_option]) :: :ok | {:error, term()}
   defdelegate grep(regex_or_string, opts \\ []), to: Autoclient
