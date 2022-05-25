@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.5
+
+* Improvements
+  * `RingLogger.grep/2` supports `:before` and `:after` options
+  * Support OTP 25
+
 ## v0.8.4
 
 * Fixes
