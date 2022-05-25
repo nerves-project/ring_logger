@@ -152,6 +152,29 @@ defmodule RingLoggerTest do
     assert message =~ "[debug] #{IO.ANSI.inverse()}Hello#{IO.ANSI.inverse_off()}"
   end
 
+  test "can grep before and after lines", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:debug, "b3")
+    |> handshake_log(:debug, "b2")
+    |> handshake_log(:debug, "b1")
+    |> handshake_log(:debug, "howdy")
+    |> handshake_log(:debug, "a1")
+    |> handshake_log(:debug, "a2")
+    |> handshake_log(:debug, "a3")
+
+    RingLogger.grep(~r/howdy/, before: 2, after: 2, io: io, colors: [enabled: false])
+    assert_receive {:io, message}
+    refute message =~ "[debug] b3"
+    assert message =~ "[debug] b2"
+    assert message =~ "[debug] b1"
+    assert message =~ "[debug] howdy"
+    assert message =~ "[debug] a1"
+    assert message =~ "[debug] a2"
+    refute message =~ "[debug] a3"
+  end
+
   test "invalid regex returns error", %{io: io} do
     assert {:error, _} = RingLogger.grep(5, io: io)
   end

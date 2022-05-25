@@ -148,6 +148,8 @@ defmodule RingLogger.Client do
   Supported options:
 
   * `:pager` - an optional 2-arity function that takes an IO device and what to print
+  * `:before` - Number of lines before the match to include
+  * `:after` - NUmber of lines after the match to include
   """
   @spec grep(GenServer.server(), String.t() | Regex.t(), [RingLogger.client_option()]) ::
           :ok | {:error, term()}
@@ -160,7 +162,7 @@ defmodule RingLogger.Client do
   end
 
   def grep(client_pid, %Regex{} = regex, opts) do
-    {io, to_print} = GenServer.call(client_pid, {:grep, regex})
+    {io, to_print} = GenServer.call(client_pid, {:grep, regex, opts})
 
     pager = Keyword.get(opts, :pager, &IO.binwrite/2)
     pager.(io, to_print)
@@ -237,14 +239,20 @@ defmodule RingLogger.Client do
     {:reply, :ok, %{state | index: 0}}
   end
 
-  def handle_call({:grep, regex}, _from, state) do
-    to_return =
-      for message <- Server.get(0, 0),
+  def handle_call({:grep, regex, opts}, _from, state) do
+    formatted_buff =
+      for {message, i} <- Enum.with_index(Server.get(0, 0)),
           should_print?(message, state),
           formatted = format_message(message, state),
           bin = IO.iodata_to_binary(formatted),
-          Regex.match?(regex, bin),
-          do: maybe_color_grep(bin, regex, state)
+          do: {bin, Regex.match?(regex, bin), i}
+
+    extras = determine_extra_grep_lines(formatted_buff, opts)
+
+    to_return =
+      for {bin, matched?, i} <- formatted_buff, matched? or i in extras do
+        if matched?, do: maybe_color_grep(bin, regex, state), else: bin
+      end
 
     {:reply, {state.io, to_return}, state}
   end
@@ -462,4 +470,17 @@ defmodule RingLogger.Client do
   end
 
   defp maybe_color_grep(bin, _regex, _state), do: bin
+
+  defp determine_extra_grep_lines(buff, opts) do
+    if Keyword.has_key?(opts, :before) or Keyword.has_key?(opts, :after) do
+      before = opts[:before] || 0
+      aft = opts[:after] || 0
+
+      for({_, true, i} <- buff, do: Enum.to_list((i - before)..(i + aft)))
+      |> List.flatten()
+      |> Enum.uniq()
+    else
+      []
+    end
+  end
 end
