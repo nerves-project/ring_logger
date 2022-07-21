@@ -47,7 +47,7 @@ defmodule RingLogger.MixProject do
     [
       {:circular_buffer, "~> 0.4.0"},
       {:ex_doc, "~> 0.18", only: :docs, runtime: false},
-      {:dialyxir, "~> 1.1.0", only: :dev, runtime: false}
+      {:dialyxir, "~> 1.2.0", only: :dev, runtime: false}
     ]
   end
 
