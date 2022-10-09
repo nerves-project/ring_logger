@@ -244,7 +244,7 @@ defmodule RingLogger.Client do
       for {message, i} <- Enum.with_index(Server.get(0, 0)),
           should_print?(message, state),
           formatted = format_message(message, state),
-          bin = IO.iodata_to_binary(formatted),
+          bin = IO.chardata_to_string(formatted),
           do: {bin, Regex.match?(regex, bin), i}
 
     extras = determine_extra_grep_lines(formatted_buff, opts)

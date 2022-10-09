@@ -242,6 +242,6 @@ defmodule RingLogger do
   end
 
   defp flatten({mod, msg, ts, md}) do
-    {mod, IO.iodata_to_binary(msg), ts, md}
+    {mod, IO.chardata_to_string(msg), ts, md}
   end
 end
