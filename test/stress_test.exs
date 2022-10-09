@@ -3,6 +3,9 @@ defmodule StressTest do
 
   require Logger
 
+  # Elixir 1.4 changed the default pattern (removed $levelpad) so hardcode a default
+  # pattern here
+  @default_pattern "\n$time $metadata[$level] $message\n"
   @ring_size 11
 
   setup do
@@ -14,7 +17,7 @@ defmodule StressTest do
     Logger.flush()
 
     Logger.add_backend(RingLogger)
-    Logger.configure_backend(RingLogger, max_size: @ring_size)
+    Logger.configure_backend(RingLogger, max_size: @ring_size, format: @default_pattern)
 
     on_exit(fn ->
       RingLogger.TestIO.stop(pid)
@@ -60,7 +63,7 @@ defmodule StressTest do
           assert_receive {:io, messages}, 100
 
           for j <- 1..k do
-            assert messages =~ "[info]  #{k}: starter #{j}"
+            assert messages =~ "[info] #{k}: starter #{j}"
           end
         end
 
