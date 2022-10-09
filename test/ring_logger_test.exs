@@ -467,6 +467,13 @@ defmodule RingLoggerTest do
     assert {:error, :enoent} == RingLogger.save("/a/b/c/d/e/f/g")
   end
 
+  test "logging chardata", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+    Logger.info('Cześć!')
+    assert_receive {:io, message}
+    assert message =~ "[info]  Cześć!"
+  end
+
   describe "fetching config" do
     test "can retrieve config for attached client", %{io: io} do
       :ok = RingLogger.attach(io: io)
