@@ -4,6 +4,9 @@ defmodule RingLogger.Client.Test do
 
   setup do
     {:ok, client} = Client.start_link()
+    # Elixir 1.4 changed the default pattern (removed $levelpad) so hardcode a default
+    # pattern here
+    Client.configure(client, format: "\n$time $metadata[$level] $message\n")
     {:ok, %{client: client}}
   end
 
@@ -85,7 +88,7 @@ defmodule RingLogger.Client.Test do
   test "can retrieve configuration", %{client: client} do
     config = [
       colors: %{debug: :cyan, enabled: true, error: :red, info: :normal, warn: :yellow},
-      format: ["\n", :time, " ", :metadata, "[", :level, "] ", :levelpad, :message, "\n"],
+      format: ["\n", :time, " ", :metadata, "[", :level, "] ", :message, "\n"],
       io: :stdio,
       level: :debug,
       metadata: [],

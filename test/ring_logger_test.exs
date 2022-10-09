@@ -6,6 +6,10 @@ defmodule RingLoggerTest do
   require Logger
   alias RingLogger.TestCustomFormatter
 
+  # Elixir 1.4 changed the default pattern (removed $levelpad) so hardcode a default
+  # pattern here
+  @default_pattern "\n$time $metadata[$level] $message\n"
+
   setup do
     {:ok, pid} = RingLogger.TestIO.start(self())
     Logger.remove_backend(:console)
@@ -15,7 +19,7 @@ defmodule RingLoggerTest do
     Logger.flush()
 
     Logger.add_backend(RingLogger)
-    Logger.configure_backend(RingLogger, max_size: 10)
+    Logger.configure_backend(RingLogger, max_size: 10, format: @default_pattern)
 
     on_exit(fn ->
       RingLogger.TestIO.stop(pid)
@@ -304,7 +308,7 @@ defmodule RingLoggerTest do
 
     assert_receive {:io, messages}
 
-    assert messages =~ "Got 139 characters"
+    assert messages =~ "Got 138 characters"
   end
 
   test "tail supports passing a custom pager", %{io: io} do
@@ -440,7 +444,7 @@ defmodule RingLoggerTest do
 
     RingLogger.grep(~r/H..lo/, io: io, colors: [enabled: false])
     assert_receive {:io, message}
-    assert String.contains?(message, "[info]  Hello")
+    assert String.contains?(message, "[info] Hello")
   end
 
   test "can save to a file", %{io: io} do
@@ -471,7 +475,7 @@ defmodule RingLoggerTest do
     :ok = RingLogger.attach(io: io)
     Logger.info('Cześć!')
     assert_receive {:io, message}
-    assert message =~ "[info]  Cześć!"
+    assert message =~ "[info] Cześć!"
   end
 
   describe "fetching config" do
@@ -480,7 +484,7 @@ defmodule RingLoggerTest do
 
       config = [
         colors: %{debug: :cyan, enabled: true, error: :red, info: :normal, warn: :yellow},
-        format: ["\n", :time, " ", :metadata, "[", :level, "] ", :levelpad, :message, "\n"],
+        format: ["\n", :time, " ", :metadata, "[", :level, "] ", :message, "\n"],
         io: io,
         level: :debug,
         metadata: [],

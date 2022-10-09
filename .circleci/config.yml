@@ -26,11 +26,11 @@ defaults: &defaults
   working_directory: ~/repo
 
 jobs:
-  build_elixir_1_13_otp_25:
+  build_elixir_1_14_otp_25:
     docker:
-      - image: erlang:25.0
+      - image: erlang:25.1.1
         environment:
-          ELIXIR_VERSION: 1.13.4-otp-25
+          ELIXIR_VERSION: 1.14.0-otp-25
           LC_ALL: C.UTF-8
     <<: *defaults
     steps:
@@ -52,6 +52,21 @@ jobs:
           paths:
             - _build
             - deps
+
+  build_elixir_1_13_otp_25:
+    docker:
+      - image: erlang:25
+        environment:
+          ELIXIR_VERSION: 1.13.4-otp-25
+          LC_ALL: C.UTF-8
+    <<: *defaults
+    steps:
+      - checkout
+      - <<: *install_system_deps
+      - <<: *install_elixir
+      - <<: *install_hex_rebar
+      - run: mix deps.get
+      - run: mix test
 
   build_elixir_1_12_otp_24:
     docker:
@@ -194,6 +209,7 @@ workflows:
   version: 2
   build_test:
     jobs:
+      - build_elixir_1_14_otp_25
       - build_elixir_1_13_otp_25
       - build_elixir_1_12_otp_24
       - build_elixir_1_11_otp_23
