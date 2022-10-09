@@ -292,7 +292,7 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Foo")
     |> handshake_log(:debug, "Bar")
 
-    # Even thought the intention for a custom pager is to "page" the output to the user,
+    # Even though the intention for a custom pager is to "page" the output to the user,
     # just print out the number of characters as a check that the custom function is
     # actually run.
     :ok =
