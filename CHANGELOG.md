@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.6
+
+* Improvements
+  * Fixed crashes when converting unicode chardata. Thanks to @x4lldux for this
+    fix.
+
 ## v0.8.5
 
 * Improvements
