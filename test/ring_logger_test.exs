@@ -41,7 +41,7 @@ defmodule RingLoggerTest do
     assert_receive {:io, msg}
     assert String.contains?(msg, to_string(level))
 
-    flattened_message = IO.iodata_to_binary(message)
+    flattened_message = IO.chardata_to_string(message)
     assert String.contains?(msg, flattened_message)
     io
   end
@@ -302,7 +302,7 @@ defmodule RingLoggerTest do
     :ok =
       RingLogger.next(
         pager: fn device, msg ->
-          IO.write(device, "Got #{String.length(IO.iodata_to_binary(msg))} characters")
+          IO.write(device, "Got #{String.length(IO.chardata_to_string(msg))} characters")
         end
       )
 
@@ -322,7 +322,7 @@ defmodule RingLoggerTest do
     :ok =
       RingLogger.tail(2,
         pager: fn device, msg ->
-          IO.write(device, "Got #{String.length(IO.iodata_to_binary(msg))} characters")
+          IO.write(device, "Got #{String.length(IO.chardata_to_string(msg))} characters")
         end
       )
 
@@ -342,7 +342,7 @@ defmodule RingLoggerTest do
     :ok =
       RingLogger.grep(~r/debug/,
         pager: fn device, msg ->
-          IO.write(device, "Got #{String.length(IO.iodata_to_binary(msg))} characters")
+          IO.write(device, "Got #{String.length(IO.chardata_to_string(msg))} characters")
         end
       )
 

@@ -39,7 +39,7 @@ defmodule StressTest do
     assert_receive {:io, msg}
     assert String.contains?(msg, to_string(level))
 
-    flattened_message = IO.iodata_to_binary(message)
+    flattened_message = IO.chardata_to_string(message)
     assert String.contains?(msg, flattened_message)
     io
   end
