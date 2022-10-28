@@ -235,19 +235,13 @@ defmodule RingLogger.Client do
   end
 
   def handle_call(:count_next, _from, state) do
-    case Server.get(state.index, 0) do
-      [] ->
-        # No messages
-        {:reply, 0, state}
+    count =
+      case Server.get(state.index, 0) do
+        [] -> 0
+        messages -> Enum.count(messages, &should_print?(&1, state))
+      end
 
-      messages ->
-        count =
-          messages
-          |> Enum.filter(&should_print?(&1, state))
-          |> Enum.count()
-
-        {:reply, count, state}
-    end
+    {:reply, count, state}
   end
 
   def handle_call({:tail, n}, _from, state) do
