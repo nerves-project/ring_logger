@@ -62,6 +62,15 @@ defmodule RingLogger.Autoclient do
   end
 
   @doc """
+  Print the log message count since the previous time this was called.
+  """
+  def count_next(opts \\ []) do
+    with :ok <- check_server_started(),
+         pid <- maybe_create_client(opts),
+         do: Client.count_next(pid)
+  end
+
+  @doc """
   Print the most recent log messages.
   """
   def tail(n, opts) do

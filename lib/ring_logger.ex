@@ -105,6 +105,17 @@ defmodule RingLogger do
   defdelegate next(opts \\ []), to: Autoclient
 
   @doc """
+  Count the next messages in the log.
+
+  Options include:
+
+  * Options from `attach/1`
+  * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
+  """
+  @spec count_next([client_option]) :: non_neg_integer() | {:error, term()}
+  defdelegate count_next(opts \\ []), to: Autoclient
+
+  @doc """
   Save the contents of the log to the specified path
 
   The file is overwritten if it already exists. Log message
