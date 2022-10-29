@@ -118,6 +118,14 @@ defmodule RingLogger.Client do
   end
 
   @doc """
+  Count the next set of the messages in the log.
+  """
+  @spec count_next(GenServer.server()) :: non_neg_integer() | {:error, term()}
+  def count_next(client_pid) do
+    GenServer.call(client_pid, :count_next)
+  end
+
+  @doc """
   Reset the index into the log for `tail/1` to the oldest entry.
   """
   @spec reset(GenServer.server()) :: :ok
@@ -224,6 +232,14 @@ defmodule RingLogger.Client do
 
         {:reply, {state.io, rc}, %{state | index: next_index}}
     end
+  end
+
+  def handle_call(:count_next, _from, state) do
+    count =
+      Server.get(state.index, 0)
+      |> Enum.count(&should_print?(&1, state))
+
+    {:reply, count, state}
   end
 
   def handle_call({:tail, n}, _from, state) do
