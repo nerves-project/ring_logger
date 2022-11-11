@@ -136,7 +136,8 @@ defmodule RingLogger.Server do
 
   @impl GenServer
   def handle_cast({:log, level, message}, state) do
-    {:noreply, push(level, message, state)}
+    log_entry = RingLogger.LogEntry.new(level, message)
+    {:noreply, push(log_entry, state)}
   end
 
   @impl GenServer
@@ -188,14 +189,12 @@ defmodule RingLogger.Server do
     List.keyfind(state.clients, client_pid, 0)
   end
 
-  defp push(level, {mod, msg, ts, md}, state) do
-    index = state.index
-    log_entry = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
-
+  defp push(log_entry, state) do
+    log_entry = RingLogger.LogEntry.put_index(log_entry, state.index)
     Enum.each(state.clients, &send_log(&1, log_entry))
 
     new_cb = CircularBuffer.insert(state.cb, log_entry)
-    %{state | cb: new_cb, index: index + 1}
+    %{state | cb: new_cb, index: state.index + 1}
   end
 
   defp send_log({client_pid, _ref}, log_entry) do

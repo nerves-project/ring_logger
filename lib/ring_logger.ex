@@ -52,9 +52,7 @@ defmodule RingLogger do
           | {:application_levels, map()}
 
   @typedoc "A tuple holding a raw, unformatted log entry"
-  @type entry ::
-          {Logger.level(),
-           {module(), Logger.message(), Logger.Formatter.time(), Logger.metadata()}}
+  @type entry :: RingLogger.LogEntry.t()
 
   @typep custom_formatter :: {module, function}
 
