@@ -499,6 +499,22 @@ defmodule RingLoggerTest do
     end
   end
 
+  describe "count_next/1" do
+    test "returns per-level log counts for next set of log messages" do
+      assert RingLogger.count_next() == %{}
+      Logger.info('foo')
+      assert RingLogger.count_next() == %{info: 1}
+      Logger.debug('bar')
+      assert RingLogger.count_next() == %{info: 1, debug: 1}
+      Logger.warn('baz')
+      assert RingLogger.count_next() == %{info: 1, debug: 1, warn: 1}
+      Logger.error('uhh')
+      assert RingLogger.count_next() == %{info: 1, debug: 1, warn: 1, error: 1}
+      Logger.info('foo')
+      assert RingLogger.count_next() == %{info: 2, debug: 1, warn: 1, error: 1}
+    end
+  end
+
   defp capture_log(fun) do
     capture_io(:user, fn ->
       fun.()

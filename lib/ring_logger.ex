@@ -112,7 +112,14 @@ defmodule RingLogger do
   * Options from `attach/1`
   * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
   """
-  @spec count_next([client_option]) :: non_neg_integer() | {:error, term()}
+  @spec count_next([client_option]) ::
+          %{
+            info: non_neg_integer(),
+            debug: non_neg_integer(),
+            warn: non_neg_integer(),
+            error: non_neg_integer()
+          }
+          | {:error, term()}
   defdelegate count_next(opts \\ []), to: Autoclient
 
   @doc """

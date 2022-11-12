@@ -118,9 +118,16 @@ defmodule RingLogger.Client do
   end
 
   @doc """
-  Count the next set of the messages in the log.
+  Get the per-level message counts for the next set of the messages in the log.
   """
-  @spec count_next(GenServer.server()) :: non_neg_integer() | {:error, term()}
+  @spec count_next(GenServer.server()) ::
+          %{
+            info: non_neg_integer(),
+            debug: non_neg_integer(),
+            warn: non_neg_integer(),
+            error: non_neg_integer()
+          }
+          | {:error, term()}
   def count_next(client_pid) do
     GenServer.call(client_pid, :count_next)
   end
@@ -235,11 +242,12 @@ defmodule RingLogger.Client do
   end
 
   def handle_call(:count_next, _from, state) do
-    count =
+    counts =
       Server.get(state.index, 0)
-      |> Enum.count(&should_print?(&1, state))
+      |> Enum.filter(&should_print?(&1, state))
+      |> Enum.frequencies_by(&elem(&1, 0))
 
-    {:reply, count, state}
+    {:reply, counts, state}
   end
 
   def handle_call({:tail, n}, _from, state) do
