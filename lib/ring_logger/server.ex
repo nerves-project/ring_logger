@@ -2,6 +2,12 @@ defmodule RingLogger.Server do
   @moduledoc false
   use GenServer
 
+  # This GenServer is separate from the Logger backend to allow for
+  # `RingLogger.Client`s to query the circular buffers without halting
+  # the backend at all. The Logger backend `cast`s all data over to
+  # this process.
+
+  alias RingLogger.Buffer
   alias RingLogger.Client
 
   @default_max_size 1024
@@ -10,7 +16,8 @@ defmodule RingLogger.Server do
     @moduledoc false
 
     defstruct clients: [],
-              cb: nil,
+              buffers: %{},
+              default_buffer: nil,
               index: 0
   end
 
@@ -74,30 +81,59 @@ defmodule RingLogger.Server do
   def init(opts) do
     max_size = Keyword.get(opts, :max_size, @default_max_size)
 
-    {:ok, %State{cb: CircularBuffer.new(max_size)}}
+    buffers = reset_buffers(Keyword.get(opts, :buffers, %{}))
+
+    {:ok, %State{buffers: buffers, default_buffer: CircularBuffer.new(max_size)}}
   end
 
   @impl GenServer
   def handle_call(:clear, _from, state) do
-    max_size = state.cb.max_size
+    max_size = state.default_buffer.max_size
 
-    {:reply, :ok, %{state | cb: CircularBuffer.new(max_size)}}
+    buffers =
+      Enum.map(state.buffers, fn buffer ->
+        %{buffer | circular_buffer: CircularBuffer.new(buffer.max_size)}
+      end)
+
+    {:reply, :ok, %{state | buffers: buffers, default_buffer: CircularBuffer.new(max_size)}}
   end
 
   def handle_call(:config, _from, state) do
-    config = %{max_size: state.cb.max_size}
+    buffers =
+      state.buffers
+      |> Enum.map(fn buffer ->
+        {buffer.name, Map.take(buffer, [:levels, :max_size])}
+      end)
+      |> Enum.into(%{})
+
+    config = %{
+      max_size: state.default_buffer.max_size,
+      buffers: buffers
+    }
 
     {:reply, config, state}
   end
 
   def handle_call({:configure, opts}, _from, state) do
-    case Keyword.get(opts, :max_size) do
-      nil ->
-        {:reply, :ok, state}
+    state =
+      case Keyword.get(opts, :max_size) do
+        nil ->
+          state
 
-      max_size ->
-        {:reply, :ok, %State{state | cb: CircularBuffer.new(max_size)}}
-    end
+        max_size ->
+          %State{state | default_buffer: CircularBuffer.new(max_size)}
+      end
+
+    state =
+      case Keyword.get(opts, :buffers) do
+        nil ->
+          state
+
+        buffers ->
+          %State{state | buffers: reset_buffers(buffers)}
+      end
+
+    {:reply, :ok, state}
   end
 
   def handle_call({:attach, client_pid}, _from, state) do
@@ -109,15 +145,19 @@ defmodule RingLogger.Server do
   end
 
   def handle_call({:get, start_index, 0}, _from, state) do
-    first_index = state.index - Enum.count(state.cb)
+    logs = merge_buffers(state)
+
+    first_index = state.index - Enum.count(logs)
     adjusted_start_index = max(start_index - first_index, 0)
-    items = Enum.drop(state.cb, adjusted_start_index)
+    items = Enum.drop(logs, adjusted_start_index)
 
     {:reply, items, state}
   end
 
   def handle_call({:get, start_index, n}, _from, state) do
-    first_index = state.index - Enum.count(state.cb)
+    logs = merge_buffers(state)
+
+    first_index = state.index - Enum.count(logs)
     last_index = state.index
 
     {adjusted_start_index, adjusted_n} =
@@ -125,13 +165,15 @@ defmodule RingLogger.Server do
       |> adjust_left(first_index)
       |> adjust_right(last_index)
 
-    items = Enum.slice(state.cb, adjusted_start_index, adjusted_n)
+    items = Enum.slice(logs, adjusted_start_index, adjusted_n)
 
     {:reply, items, state}
   end
 
   def handle_call({:tail, n}, _from, state) do
-    {:reply, Enum.take(state.cb, -n), state}
+    logs = merge_buffers(state)
+
+    {:reply, Enum.take(logs, -n), state}
   end
 
   @impl GenServer
@@ -188,17 +230,57 @@ defmodule RingLogger.Server do
     List.keyfind(state.clients, client_pid, 0)
   end
 
-  defp push(level, {mod, msg, ts, md}, state) do
+  defp push(level, {mod, msg, ts, metadata}, state) do
     index = state.index
-    log_entry = {level, {mod, msg, ts, Keyword.put(md, :index, index)}}
+
+    metadata =
+      metadata
+      |> Keyword.put(:index, index)
+      |> Keyword.put(:monotonic_time, :erlang.monotonic_time())
+
+    log_entry = {level, {mod, msg, ts, metadata}}
 
     Enum.each(state.clients, &send_log(&1, log_entry))
 
-    new_cb = CircularBuffer.insert(state.cb, log_entry)
-    %{state | cb: new_cb, index: index + 1}
+    state = insert_log(state, log_entry)
+
+    %{state | index: index + 1}
+  end
+
+  defp insert_log(state, {level, log_entry}) do
+    case Enum.find(state.buffers, &(level in &1.levels)) do
+      nil ->
+        default_buffer = CircularBuffer.insert(state.default_buffer, {level, log_entry})
+        %{state | default_buffer: default_buffer}
+
+      buffer ->
+        buffers = List.delete(state.buffers, buffer)
+        circular_buffer = CircularBuffer.insert(buffer.circular_buffer, {level, log_entry})
+        buffer = %{buffer | circular_buffer: circular_buffer}
+        %{state | buffers: [buffer | buffers]}
+    end
   end
 
   defp send_log({client_pid, _ref}, log_entry) do
     send(client_pid, {:log, log_entry})
+  end
+
+  defp merge_buffers(state) do
+    (Enum.map(state.buffers, & &1.circular_buffer) ++ [state.default_buffer])
+    |> Enum.flat_map(& &1)
+    |> Enum.sort_by(fn {_level, {_module, _message, _ts, metadata}} ->
+      metadata[:monotonic_time]
+    end)
+  end
+
+  defp reset_buffers(buffers) do
+    Enum.map(buffers, fn {name, config} ->
+      %Buffer{
+        name: name,
+        levels: config[:levels],
+        max_size: config[:max_size],
+        circular_buffer: CircularBuffer.new(config[:max_size])
+      }
+    end)
   end
 end

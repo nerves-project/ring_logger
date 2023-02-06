@@ -20,7 +20,7 @@ defmodule RingLoggerTest do
     Logger.flush()
 
     Logger.add_backend(RingLogger)
-    Logger.configure_backend(RingLogger, max_size: 10, format: @default_pattern)
+    Logger.configure_backend(RingLogger, max_size: 10, format: @default_pattern, buffers: [])
 
     on_exit(fn ->
       RingLogger.TestIO.stop(pid)
@@ -497,6 +497,146 @@ defmodule RingLoggerTest do
 
     test "returns error when no attached client" do
       assert RingLogger.config() == {:error, :no_client}
+    end
+  end
+
+  describe "multiple buffers" do
+    test "setting multiple buffers", %{io: io} do
+      Logger.configure_backend(RingLogger,
+        buffers: %{
+          errors: %{
+            levels: [:warning, :errors],
+            max_size: 10
+          }
+        }
+      )
+
+      :ok = RingLogger.attach(io: io)
+    end
+
+    test "different levels use different buffers", %{io: io} do
+      Logger.configure_backend(RingLogger,
+        buffers: %{
+          debug: %{
+            levels: [:debug],
+            max_size: 10
+          },
+          error: %{
+            levels: [:error],
+            max_size: 10
+          }
+        }
+      )
+
+      :ok = RingLogger.attach(io: io)
+
+      io
+      |> handshake_log(:error, "one")
+      |> handshake_log(:error, "two")
+      |> handshake_log(:error, "three")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:debug, "bar")
+
+      buffer = RingLogger.get(0, 0)
+
+      # Should include the first 3 errors
+      [{:error, _}, {:error, _}, {:error, _} | _] = buffer
+    end
+
+    test "multiple buffers and indexing", %{io: io} do
+      Logger.configure_backend(RingLogger,
+        buffers: %{
+          debug: %{
+            levels: [:debug],
+            max_size: 3
+          },
+          error: %{
+            levels: [:error],
+            max_size: 3
+          }
+        }
+      )
+
+      :ok = RingLogger.attach(io: io)
+
+      io
+      |> handshake_log(:error, "one")
+      |> handshake_log(:error, "two")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:error, "three")
+      |> handshake_log(:debug, "bar")
+
+      buffer = RingLogger.get(2, 3)
+
+      [{:debug, _}, {:error, _}, {:debug, _}] = buffer
+    end
+
+    test "`get(starting_index, 0)` returns everything after the starting index", %{io: io} do
+      Logger.configure_backend(RingLogger,
+        buffers: %{
+          debug: %{
+            levels: [:debug],
+            max_size: 3
+          },
+          error: %{
+            levels: [:error],
+            max_size: 3
+          }
+        }
+      )
+
+      :ok = RingLogger.attach(io: io)
+
+      io
+      |> handshake_log(:error, "one")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:error, "two")
+      |> handshake_log(:error, "three")
+      |> handshake_log(:debug, "bar")
+
+      buffer = RingLogger.get(1, 0)
+
+      [{:debug, _}, {:error, _}, {:error, _}, {:debug, _}] = buffer
+    end
+
+    test "tailing multiple buffers", %{io: io} do
+      Logger.configure_backend(RingLogger,
+        buffers: %{
+          debug: %{
+            levels: [:debug],
+            max_size: 3
+          },
+          error: %{
+            levels: [:error],
+            max_size: 3
+          }
+        }
+      )
+
+      :ok = RingLogger.attach(io: io)
+
+      io
+      |> handshake_log(:error, "one")
+      |> handshake_log(:debug, "bar")
+      |> handshake_log(:error, "two")
+      |> handshake_log(:error, "three")
+      |> handshake_log(:debug, "baz")
+
+      :ok = RingLogger.tail(3)
+
+      assert_receive {:io, logs}
+
+      logs = String.replace(logs, "\n", " ")
+
+      assert logs =~ ~r/\[error\] two.+\[error\] three.+\[debug\] baz/
     end
   end
 

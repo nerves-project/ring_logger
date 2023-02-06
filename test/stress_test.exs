@@ -17,7 +17,12 @@ defmodule StressTest do
     Logger.flush()
 
     Logger.add_backend(RingLogger)
-    Logger.configure_backend(RingLogger, max_size: @ring_size, format: @default_pattern)
+
+    Logger.configure_backend(RingLogger,
+      max_size: @ring_size,
+      format: @default_pattern,
+      buffers: []
+    )
 
     on_exit(fn ->
       RingLogger.TestIO.stop(pid)

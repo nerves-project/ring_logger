@@ -36,8 +36,28 @@ use Mix.Config
 # default :console backend.
 config :logger, backends: [RingLogger]
 
-# Set the number of messages to hold in the circular buffer
+# Set the number of messages to hold in the default circular buffer
 config :logger, RingLogger, max_size: 1024
+
+# Configure multiple buffers based on log levels
+config :logger, RingLogger, buffers: %{
+  low_priority: %{
+    levels: [:warning, :notice, :info, :debug],
+    max_size: 1024
+  },
+  high_priority: %{
+    levels: [:emergency, :alert, :critical, :error],
+    max_size: 1024
+  }
+]
+
+# If levels are missing, the use the default logger
+config :logger, RingLogger, buffers: %{
+  errors: %{
+    levels: [:error, :warning],
+    max_size: 1024
+  }
+}
 
 # You can also configure `RingLogger.Client` options to be used
 # with every client by default

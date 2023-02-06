@@ -13,6 +13,26 @@ defmodule RingLogger do
 
   # Set the number of messages to hold in the circular buffer
   config :logger, RingLogger, max_size: 1024
+
+  # Configure multiple buffers based on log levels
+  config :logger, RingLogger, buffers: %{
+    low_priority: %{
+      levels: [:warning, :notice, :info, :debug],
+      max_size: 1024
+    },
+    high_priority: %{
+      levels: [:emergency, :alert, :critical, :error],
+      max_size: 1024
+    }
+  ]
+
+  # If levels are missing, the use the default logger
+  config :logger, RingLogger, buffers: %{
+    errors: %{
+      levels: [:error, :warning],
+      max_size: 1024
+    }
+  }
   ```
 
   Or add manually:
