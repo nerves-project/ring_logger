@@ -8,7 +8,7 @@ defmodule RingLogger.MixProject do
     [
       app: :ring_logger,
       version: @version,
-      elixir: "~> 1.4",
+      elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
