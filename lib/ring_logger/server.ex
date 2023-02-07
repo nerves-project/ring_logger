@@ -1,10 +1,10 @@
 defmodule RingLogger.Server do
+  @moduledoc false
   use GenServer
 
-  @moduledoc false
-  @default_max_size 1024
-
   alias RingLogger.Client
+
+  @default_max_size 1024
 
   defmodule State do
     @moduledoc false
@@ -163,7 +163,7 @@ defmodule RingLogger.Server do
   defp adjust_right(loc, _i), do: loc
 
   defp attach_client(client_pid, state) do
-    if !client_info(client_pid, state) do
+    if client_info(client_pid, state) == nil do
       ref = Process.monitor(client_pid)
       %{state | clients: [{client_pid, ref} | state.clients]}
     else

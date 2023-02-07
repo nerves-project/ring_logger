@@ -1,4 +1,6 @@
 defmodule RingLogger.ApplicationEnvHelpers do
+  @moduledoc false
+
   @doc """
   Set application env for one test, then resets it after
 

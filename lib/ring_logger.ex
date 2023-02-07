@@ -1,6 +1,4 @@
 defmodule RingLogger do
-  @behaviour :gen_event
-
   @moduledoc """
   This is an in-memory ring buffer backend for the Elixir Logger.
 
@@ -31,8 +29,10 @@ defmodule RingLogger do
   you're writing a program that needs to get log messages, use `get` or
   `start_link` a `RingLogger.Client` and call its methods directly.
   """
+  @behaviour :gen_event
 
-  alias RingLogger.{Server, Autoclient}
+  alias RingLogger.Autoclient
+  alias RingLogger.Server
 
   @typedoc "Option values used by the ring logger"
   @type server_option :: {:max_size, pos_integer()}

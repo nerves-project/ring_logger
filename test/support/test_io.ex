@@ -1,4 +1,5 @@
 defmodule RingLogger.TestIO do
+  @moduledoc false
   use GenServer
 
   def start(callback) do

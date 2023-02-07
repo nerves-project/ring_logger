@@ -3,8 +3,9 @@ defmodule RingLoggerTest do
   doctest RingLogger
 
   import ExUnit.CaptureIO
-  require Logger
   alias RingLogger.TestCustomFormatter
+
+  require Logger
 
   # Elixir 1.4 changed the default pattern (removed $levelpad) so hardcode a default
   # pattern here

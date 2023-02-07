@@ -47,7 +47,8 @@ defmodule RingLogger.MixProject do
     [
       {:circular_buffer, "~> 0.4.0"},
       {:ex_doc, "~> 0.18", only: :docs, runtime: false},
-      {:dialyxir, "~> 1.2.0", only: :dev, runtime: false}
+      {:dialyxir, "~> 1.2", only: :dev, runtime: false},
+      {:credo, "~> 1.5", only: :dev, runtime: false}
     ]
   end
 
@@ -64,7 +65,7 @@ defmodule RingLogger.MixProject do
 
   defp dialyzer() do
     [
-      flags: [:missing_return, :extra_return, :unmatched_returns, :error_handling]
+      flags: [:missing_return, :extra_return, :unmatched_returns, :error_handling, :underspecs]
     ]
   end
 end

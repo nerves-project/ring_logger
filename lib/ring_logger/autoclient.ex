@@ -1,6 +1,4 @@
 defmodule RingLogger.Autoclient do
-  alias RingLogger.Client
-
   @moduledoc """
   Helper module for `RingLogger.Client` to simplify IEx use
 
@@ -8,6 +6,8 @@ defmodule RingLogger.Autoclient do
   program, call `RingLogger.Client.start_link/1` to start your own client and
   call it directly.
   """
+
+  alias RingLogger.Client
 
   @doc """
   Attach to the logger and print messages as they come in.
@@ -119,7 +119,7 @@ defmodule RingLogger.Autoclient do
   end
 
   defp check_server_started() do
-    if !Process.whereis(RingLogger.Server) do
+    if Process.whereis(RingLogger.Server) == nil do
       IO.puts("""
       The RingLogger backend isn't running. Going to try starting it, but don't
       expect any log entries before now.

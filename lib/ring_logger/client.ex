@@ -1,12 +1,12 @@
 defmodule RingLogger.Client do
-  use GenServer
-  require Logger
-
   @moduledoc """
   Interact with the RingLogger
   """
+  use GenServer
 
   alias RingLogger.Server
+
+  require Logger
 
   defmodule State do
     @moduledoc false
@@ -326,7 +326,7 @@ defmodule RingLogger.Client do
     struct(state, config)
   end
 
-  defp build_defaults do
+  defp build_defaults() do
     deprecated_defaults = Application.get_all_env(:ring_logger)
 
     defaults =
