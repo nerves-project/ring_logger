@@ -2,6 +2,17 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.9.0
+
+This latest release removes support for Elixir versions before 1.9.
+
+* Improvements
+  * Support multiple circular buffers and filtering based on log level. This
+    makes it possible to separate out debug and info messages so they don't push
+    out error messages. See the `README.md` for configuration examples. Thanks
+    to @oestrich for this feature.
+  * Fixed and added specs throughout
+
 ## v0.8.6
 
 * Improvements
