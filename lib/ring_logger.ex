@@ -113,13 +113,13 @@ defmodule RingLogger do
   defdelegate config(), to: Autoclient
 
   @doc """
-  Detach the current IEx session from the logger.
+  Detach the current IEx session from the logger
   """
   @spec detach() :: :ok
   defdelegate detach(), to: Autoclient
 
   @doc """
-  Print the next messages in the log.
+  Print the next messages in the log
 
   Options include:
 
@@ -130,7 +130,7 @@ defmodule RingLogger do
   defdelegate next(opts \\ []), to: Autoclient
 
   @doc """
-  Count the next messages in the log.
+  Count the next messages in the log
 
   Options include:
 
