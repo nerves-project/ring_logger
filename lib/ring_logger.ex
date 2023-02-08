@@ -7,14 +7,23 @@ defmodule RingLogger do
   ```elixir
   use Mix.Config
 
-  # Add the RingLogger backend. This removes the
-  # default :console backend.
+  # Add the RingLogger backend. This removes the default :console backend.
   config :logger, backends: [RingLogger]
 
-  # Set the number of messages to hold in the circular buffer
+  # Save messages to one circular buffer that holds 1024 entries.
   config :logger, RingLogger, max_size: 1024
 
-  # Configure multiple buffers based on log levels
+  # Separate out `:error` and `:warning` messages to their own circular buffer.
+  # All other log messages are stored in the default circular buffer.
+  config :logger, RingLogger, buffers: %{
+    errors: %{
+      levels: [:error, :warning],
+      max_size: 1024
+    }
+  }
+
+  # Specify circular buffers for all log levels. The default circular buffer won't
+  # be used in this example configuration.
   config :logger, RingLogger, buffers: %{
     low_priority: %{
       levels: [:warning, :notice, :info, :debug],
@@ -25,14 +34,6 @@ defmodule RingLogger do
       max_size: 1024
     }
   ]
-
-  # If levels are missing, the use the default logger
-  config :logger, RingLogger, buffers: %{
-    errors: %{
-      levels: [:error, :warning],
-      max_size: 1024
-    }
-  }
   ```
 
   Or add manually:
