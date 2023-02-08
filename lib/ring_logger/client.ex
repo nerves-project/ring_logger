@@ -291,14 +291,17 @@ defmodule RingLogger.Client do
     {:reply, rc, state}
   end
 
-  defp message_index({_level, {_, _msg, _ts, md}}), do: Keyword.get(md, :index)
+  defp message_index(%{metadata: metadata}), do: Keyword.get(metadata, :index)
 
-  defp format_message({level, {_, msg, ts, md}}, state) do
-    metadata = take_metadata(md, state.metadata)
+  defp format_message(
+         %{level: level, message: message, timestamp: timestamp, metadata: metadata},
+         state
+       ) do
+    metadata = take_metadata(metadata, state.metadata)
 
     state.format
-    |> apply_format(level, msg, ts, metadata)
-    |> color_event(level, state.colors, md)
+    |> apply_format(level, message, timestamp, metadata)
+    |> color_event(level, state.colors, metadata)
   end
 
   ## Helpers
@@ -453,11 +456,11 @@ defmodule RingLogger.Client do
     end
   end
 
-  defp get_module_from_msg({_, {_, _, _, meta}}) do
-    Keyword.get(meta, :module)
+  defp get_module_from_msg(%{metadata: metadata}) do
+    Keyword.get(metadata, :module)
   end
 
-  defp should_print?({level, _} = msg, %__MODULE__{module_levels: module_levels} = state) do
+  defp should_print?(%{level: level} = msg, %__MODULE__{module_levels: module_levels} = state) do
     module = get_module_from_msg(msg)
 
     with module_level when not is_nil(module_level) <- Map.get(module_levels, module),

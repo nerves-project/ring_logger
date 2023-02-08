@@ -249,7 +249,7 @@ defmodule RingLoggerTest do
     handshake_log(io, :debug, "Hello")
 
     buffer = RingLogger.get()
-    assert [{:debug, {Logger, "Hello", _, _}}] = buffer
+    assert [%{level: :debug, module: Logger, message: "Hello"}] = buffer
   end
 
   test "buffer does not exceed size", %{io: io} do
@@ -259,17 +259,25 @@ defmodule RingLoggerTest do
     handshake_log(io, :debug, "Foo")
 
     buffer = RingLogger.get()
-    assert [{:debug, {Logger, "Foo", _, _}}] = buffer
+    assert [%{level: :debug, module: Logger, message: "Foo"}] = buffer
 
     handshake_log(io, :debug, "Bar")
 
     buffer = RingLogger.get()
-    assert [{:debug, {Logger, "Foo", _, _}}, {:debug, {Logger, "Bar", _, _}}] = buffer
+
+    assert [
+             %{level: :debug, module: Logger, message: "Foo"},
+             %{level: :debug, module: Logger, message: "Bar"}
+           ] = buffer
 
     handshake_log(io, :debug, "Baz")
 
     buffer = RingLogger.get()
-    assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
+
+    assert [
+             %{level: :debug, module: Logger, message: "Bar"},
+             %{level: :debug, module: Logger, message: "Baz"}
+           ] = buffer
   end
 
   test "buffer can be fetched by range", %{io: io} do
@@ -282,9 +290,13 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Baz")
 
     buffer = RingLogger.get(2)
-    assert [{:debug, {Logger, "Baz", _, _}}] = buffer
+    assert [%{level: :debug, module: Logger, message: "Baz"}] = buffer
     buffer = RingLogger.get(1)
-    assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
+
+    assert [
+             %{level: :debug, module: Logger, message: "Bar"},
+             %{level: :debug, module: Logger, message: "Baz"}
+           ] = buffer
   end
 
   test "next supports passing a custom pager", %{io: io} do
@@ -360,7 +372,7 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Bar")
 
     buffer = RingLogger.get(0)
-    assert [{:debug, {Logger, "Bar", _, _}}] = buffer
+    assert [%{level: :debug, module: Logger, message: "Bar"}] = buffer
   end
 
   test "receive nothing when fetching buffer out of range" do
@@ -377,11 +389,21 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Baz")
 
     buffer = RingLogger.get(1, 1)
-    assert [{:debug, {Logger, "Bar", _, _}}] = buffer
+    assert [%{level: :debug, module: Logger, message: "Bar"}] = buffer
+
     buffer = RingLogger.get(1, 2)
-    assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
+
+    assert [
+             %{level: :debug, module: Logger, message: "Bar"},
+             %{level: :debug, module: Logger, message: "Baz"}
+           ] = buffer
+
     buffer = RingLogger.get(1, 3)
-    assert [{:debug, {Logger, "Bar", _, _}}, {:debug, {Logger, "Baz", _, _}}] = buffer
+
+    assert [
+             %{level: :debug, module: Logger, message: "Bar"},
+             %{level: :debug, module: Logger, message: "Baz"}
+           ] = buffer
   end
 
   test "can format messages", %{io: io} do
@@ -546,7 +568,7 @@ defmodule RingLoggerTest do
       buffer = RingLogger.get(0, 0)
 
       # Should include the first 3 errors
-      [{:error, _}, {:error, _}, {:error, _} | _] = buffer
+      [%{level: :error}, %{level: :error}, %{level: :error} | _] = buffer
     end
 
     test "multiple buffers and indexing", %{io: io} do
@@ -574,7 +596,7 @@ defmodule RingLoggerTest do
 
       buffer = RingLogger.get(2, 3)
 
-      [{:debug, _}, {:error, _}, {:debug, _}] = buffer
+      [%{level: :debug}, %{level: :error}, %{level: :debug}] = buffer
     end
 
     test "`get(starting_index, 0)` returns everything after the starting index", %{io: io} do
@@ -602,7 +624,7 @@ defmodule RingLoggerTest do
 
       buffer = RingLogger.get(1, 0)
 
-      [{:debug, _}, {:error, _}, {:error, _}, {:debug, _}] = buffer
+      [%{level: :debug}, %{level: :error}, %{level: :error}, %{level: :debug}] = buffer
     end
 
     test "tailing multiple buffers", %{io: io} do
