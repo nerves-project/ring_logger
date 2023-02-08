@@ -226,7 +226,7 @@ defmodule RingLogger.Server do
     List.keyfind(state.clients, client_pid, 0)
   end
 
-  defp push(level, {mod, msg, ts, metadata}, state) do
+  defp push(level, {module, message, timestamp, metadata}, state) do
     index = state.index
 
     metadata =
@@ -234,7 +234,13 @@ defmodule RingLogger.Server do
       |> Keyword.put(:index, index)
       |> Keyword.put(:monotonic_time, :erlang.monotonic_time())
 
-    log_entry = {level, {mod, msg, ts, metadata}}
+    log_entry = %{
+      level: level,
+      module: module,
+      message: message,
+      timestamp: timestamp,
+      metadata: metadata
+    }
 
     Enum.each(state.clients, &send_log(&1, log_entry))
 
@@ -243,15 +249,15 @@ defmodule RingLogger.Server do
     %{state | index: index + 1}
   end
 
-  defp insert_log(state, {level, log_entry}) do
-    case Enum.find(state.buffers, &(level in &1.levels)) do
+  defp insert_log(state, log_entry) do
+    case Enum.find(state.buffers, &(log_entry.level in &1.levels)) do
       nil ->
-        default_buffer = CircularBuffer.insert(state.default_buffer, {level, log_entry})
+        default_buffer = CircularBuffer.insert(state.default_buffer, log_entry)
         %{state | default_buffer: default_buffer}
 
       buffer ->
         buffers = List.delete(state.buffers, buffer)
-        circular_buffer = CircularBuffer.insert(buffer.circular_buffer, {level, log_entry})
+        circular_buffer = CircularBuffer.insert(buffer.circular_buffer, log_entry)
         buffer = %{buffer | circular_buffer: circular_buffer}
         %{state | buffers: [buffer | buffers]}
     end
@@ -264,7 +270,7 @@ defmodule RingLogger.Server do
   defp merge_buffers(state) do
     (Enum.map(state.buffers, & &1.circular_buffer) ++ [state.default_buffer])
     |> Enum.flat_map(& &1)
-    |> Enum.sort_by(fn {_level, {_module, _message, _ts, metadata}} ->
+    |> Enum.sort_by(fn %{metadata: metadata} ->
       metadata[:monotonic_time]
     end)
   end

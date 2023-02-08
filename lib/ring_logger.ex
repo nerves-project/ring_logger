@@ -75,10 +75,14 @@ defmodule RingLogger do
   @typedoc "Option list for client-side functions"
   @type client_options() :: [client_option()]
 
-  @typedoc "A tuple holding a raw, unformatted log entry"
-  @type entry() ::
-          {Logger.level(),
-           {module(), Logger.message(), Logger.Formatter.time(), Logger.metadata()}}
+  @typedoc "A map holding a raw, unformatted log entry"
+  @type entry() :: %{
+          map: Logger.level(),
+          module: module(),
+          message: Logger.message(),
+          timestamp: Logger.Formatter.time(),
+          metadata: Logger.metadata()
+        }
 
   @typep custom_formatter() :: {module, function}
 
