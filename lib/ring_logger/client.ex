@@ -26,7 +26,7 @@ defmodule RingLogger.Client do
   Start up a client GenServer. Except for just getting the contents of the ring buffer, you'll
   need to create one of these. See `configure/2` for information on options.
   """
-  @spec start_link(keyword()) :: GenServer.on_start()
+  @spec start_link(RingLogger.client_options()) :: GenServer.on_start()
   def start_link(config \\ []) do
     GenServer.start_link(__MODULE__, config)
   end
@@ -42,7 +42,7 @@ defmodule RingLogger.Client do
   @doc """
   Fetch the current client configuration.
   """
-  @spec config(pid()) :: [RingLogger.client_option()]
+  @spec config(pid()) :: RingLogger.client_options()
   def config(client_pid) do
     GenServer.call(client_pid, :config)
   end
@@ -63,7 +63,7 @@ defmodule RingLogger.Client do
     %{:my_app => :error, :my_other_app => :none}. Note log levels set in `:module_levels`
     will take precedence.
   """
-  @spec configure(GenServer.server(), [RingLogger.client_option()]) :: :ok
+  @spec configure(GenServer.server(), RingLogger.client_options()) :: :ok
   def configure(client_pid, config) do
     GenServer.call(client_pid, {:configure, config})
   end
@@ -91,7 +91,8 @@ defmodule RingLogger.Client do
 
   * `:pager` - an optional 2-arity function that takes an IO device and what to print
   """
-  @spec tail(GenServer.server(), non_neg_integer()) :: :ok | {:error, term()}
+  @spec tail(GenServer.server(), non_neg_integer(), RingLogger.client_options()) ::
+          :ok | {:error, term()}
   def tail(client_pid, n, opts \\ []) do
     {io, to_print} = GenServer.call(client_pid, {:tail, n})
 
@@ -106,7 +107,7 @@ defmodule RingLogger.Client do
 
   * `:pager` - an optional 2-arity function that takes an IO device and what to print
   """
-  @spec next(GenServer.server(), keyword()) :: :ok | {:error, term()}
+  @spec next(GenServer.server(), RingLogger.client_options()) :: :ok | {:error, term()}
   def next(client_pid, opts \\ []) do
     {io, to_print} = GenServer.call(client_pid, :next)
 
@@ -117,7 +118,7 @@ defmodule RingLogger.Client do
   @doc """
   Count the next set of the messages in the log.
   """
-  @spec count_next(GenServer.server()) :: non_neg_integer() | {:error, term()}
+  @spec count_next(GenServer.server()) :: non_neg_integer()
   def count_next(client_pid) do
     GenServer.call(client_pid, :count_next)
   end
@@ -156,7 +157,7 @@ defmodule RingLogger.Client do
   * `:before` - Number of lines before the match to include
   * `:after` - NUmber of lines after the match to include
   """
-  @spec grep(GenServer.server(), String.t() | Regex.t(), [RingLogger.client_option()]) ::
+  @spec grep(GenServer.server(), String.t() | Regex.t(), RingLogger.client_options()) ::
           :ok | {:error, term()}
   def grep(client_pid, regex_or_string, opts \\ [])
 
@@ -430,6 +431,7 @@ defmodule RingLogger.Client do
     Logger.Formatter.compile(format)
   end
 
+  @spec configure_module_levels(RingLogger.client_options()) :: map()
   def configure_module_levels(config) do
     module_levels = Keyword.get(config, :module_levels, %{})
 

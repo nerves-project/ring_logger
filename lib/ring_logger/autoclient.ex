@@ -12,17 +12,15 @@ defmodule RingLogger.Autoclient do
   @doc """
   Attach to the logger and print messages as they come in.
   """
-  @spec attach([RingLogger.client_option()]) :: :ok | {:error, term()}
+  @spec attach(RingLogger.client_options()) :: :ok | {:error, term()}
   def attach(opts \\ []) do
-    with :ok <- check_server_started(),
-         pid <- maybe_create_client(opts),
-         do: Client.attach(pid)
+    run(&Client.attach/1, opts)
   end
 
   @doc """
   Fetch the current configuration for the attached client.
   """
-  @spec config() :: [RingLogger.client_option()] | {:error, term()}
+  @spec config() :: RingLogger.client_options() | {:error, term()}
   def config() do
     case get_client_pid() do
       nil -> {:error, :no_client}
@@ -44,78 +42,76 @@ defmodule RingLogger.Autoclient do
   @doc """
   Completely stop the RingLogger.Client. You normally don't need to run this.
   """
+  @spec forget() :: :ok
   def forget() do
-    client_pid = Process.delete(:ring_logger_client)
-
-    if client_pid do
-      Client.stop(client_pid)
+    case Process.delete(:ring_logger_client) do
+      nil -> :ok
+      client_pid -> Client.stop(client_pid)
     end
   end
 
   @doc """
   Print the log messages since the previous time this was called.
   """
+  @spec next(RingLogger.client_options()) :: :ok | {:error, term()}
   def next(opts \\ []) do
-    with :ok <- check_server_started(),
-         pid <- maybe_create_client(opts),
-         do: Client.next(pid, opts)
+    run(&Client.next(&1, opts), opts)
   end
 
   @doc """
   Print the log message count since the previous time this was called.
   """
+  @spec count_next(RingLogger.client_options()) :: non_neg_integer()
   def count_next(opts \\ []) do
-    with :ok <- check_server_started(),
-         pid <- maybe_create_client(opts),
-         do: Client.count_next(pid)
+    run(&Client.count_next/1, opts)
   end
 
   @doc """
   Print the most recent log messages.
   """
+  @spec tail(non_neg_integer(), RingLogger.client_options()) :: :ok
   def tail(n, opts) do
-    with :ok <- check_server_started(),
-         pid <- maybe_create_client(opts),
-         do: Client.tail(pid, n, opts)
+    run(&Client.tail(&1, n, opts), opts)
   end
 
   @doc """
   Run a regular expression on each entry in the log and print out the matchers.
   """
-  @spec grep(String.t() | Regex.t(), [RingLogger.client_option()]) :: :ok | {:error, term()}
+  @spec grep(String.t() | Regex.t(), RingLogger.client_options()) :: :ok | {:error, term()}
   def grep(regex_or_string, opts \\ []) do
-    with :ok <- check_server_started(),
-         pid <- maybe_create_client(opts),
-         do: Client.grep(pid, regex_or_string, opts)
+    run(&Client.grep(&1, regex_or_string, opts), opts)
   end
 
   @doc """
   Reset the index used to keep track of the position in the log for `tail/1` so
   that the next call to `tail/1` starts back at the oldest entry.
   """
-  @spec reset([RingLogger.client_option()]) :: :ok | {:error, term()}
+  @spec reset(RingLogger.client_options()) :: :ok | {:error, term()}
   def reset(opts \\ []) do
-    with :ok <- check_server_started(),
-         pid <- maybe_create_client(opts),
-         do: Client.reset(pid)
+    run(&Client.reset/1, opts)
   end
 
   @doc """
   Format a log message. This is useful if you're calling `RingLogger.get/1` directly.
   """
+  @spec format(RingLogger.entry()) :: :ok | {:error, term()}
   def format(message) do
-    with :ok <- check_server_started(),
-         pid <- maybe_create_client([]),
-         do: Client.format(pid, message)
+    run(&Client.format(&1, message), [])
   end
 
   @doc """
   Save the log.
   """
+  @spec save(Path.t()) :: :ok | {:error, term()}
   def save(path) do
-    with :ok <- check_server_started(),
-         pid <- maybe_create_client([]),
-         do: Client.save(pid, path)
+    run(&Client.save(&1, path), [])
+  end
+
+  defp run(fun, opts) do
+    with :ok <- check_server_started() do
+      pid = maybe_create_client(opts)
+      fun.(pid)
+    end
   end
 
   defp check_server_started() do

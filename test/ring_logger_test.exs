@@ -30,14 +30,12 @@ defmodule RingLoggerTest do
     {:ok, [io: pid]}
   end
 
-  @doc """
-  Ensure that a log message makes it way through the logger processes.
-
-  The RingLogger needs to be attached for this to work. This makes
-  logging synchronous so that we can test tail, next, grep, etc. that
-  rely on the messages being received by RingLogger.
-  """
-  def handshake_log(io, level, message) do
+  # Ensure that a log message makes it way through the logger processes.
+  #
+  # The RingLogger needs to be attached for this to work. This makes
+  # logging synchronous so that we can test tail, next, grep, etc. that
+  # rely on the messages being received by RingLogger.
+  defp handshake_log(io, level, message) do
     Logger.log(level, message)
     assert_receive {:io, msg}
     assert String.contains?(msg, to_string(level))
