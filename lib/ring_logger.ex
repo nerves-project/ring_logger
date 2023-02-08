@@ -132,6 +132,8 @@ defmodule RingLogger do
   @doc """
   Count the next messages in the log
 
+  NOTE: This function may change in future releases.
+
   Options include:
 
   * Options from `attach/1`
