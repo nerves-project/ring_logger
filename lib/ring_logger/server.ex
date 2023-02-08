@@ -12,14 +12,10 @@ defmodule RingLogger.Server do
 
   @default_max_size 1024
 
-  defmodule State do
-    @moduledoc false
-
-    defstruct clients: [],
-              buffers: %{},
-              default_buffer: nil,
-              index: 0
-  end
+  defstruct clients: [],
+            buffers: %{},
+            default_buffer: nil,
+            index: 0
 
   @spec start_link([RingLogger.server_option()]) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -83,7 +79,7 @@ defmodule RingLogger.Server do
 
     buffers = reset_buffers(Keyword.get(opts, :buffers, %{}))
 
-    {:ok, %State{buffers: buffers, default_buffer: CircularBuffer.new(max_size)}}
+    {:ok, %__MODULE__{buffers: buffers, default_buffer: CircularBuffer.new(max_size)}}
   end
 
   @impl GenServer
@@ -121,7 +117,7 @@ defmodule RingLogger.Server do
           state
 
         max_size ->
-          %State{state | default_buffer: CircularBuffer.new(max_size)}
+          %__MODULE__{state | default_buffer: CircularBuffer.new(max_size)}
       end
 
     state =
@@ -130,7 +126,7 @@ defmodule RingLogger.Server do
           state
 
         buffers ->
-          %State{state | buffers: reset_buffers(buffers)}
+          %__MODULE__{state | buffers: reset_buffers(buffers)}
       end
 
     {:reply, :ok, state}

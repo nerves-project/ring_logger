@@ -8,22 +8,19 @@ defmodule RingLogger.Client do
 
   require Logger
 
-  defmodule State do
-    @moduledoc false
-    defstruct io: :stdio,
-              colors: %{
-                debug: :cyan,
-                info: :normal,
-                warn: :yellow,
-                error: :red,
-                enabled: IO.ANSI.enabled?()
-              },
-              metadata: [],
-              format: Logger.Formatter.compile(nil),
-              level: :debug,
-              index: 0,
-              module_levels: %{}
-  end
+  defstruct io: :stdio,
+            colors: %{
+              debug: :cyan,
+              info: :normal,
+              warn: :yellow,
+              error: :red,
+              enabled: IO.ANSI.enabled?()
+            },
+            metadata: [],
+            format: Logger.Formatter.compile(nil),
+            level: :debug,
+            index: 0,
+            module_levels: %{}
 
   @doc """
   Start up a client GenServer. Except for just getting the contents of the ring buffer, you'll
@@ -313,7 +310,7 @@ defmodule RingLogger.Client do
     Logger.Formatter.format(format, level, msg, ts, metadata)
   end
 
-  defp configure_state(config, state \\ %State{}) do
+  defp configure_state(config, state \\ %__MODULE__{}) do
     defaults = build_defaults()
 
     config =
@@ -458,7 +455,7 @@ defmodule RingLogger.Client do
     Keyword.get(meta, :module)
   end
 
-  defp should_print?({level, _} = msg, %State{module_levels: module_levels} = state) do
+  defp should_print?({level, _} = msg, %__MODULE__{module_levels: module_levels} = state) do
     module = get_module_from_msg(msg)
 
     with module_level when not is_nil(module_level) <- Map.get(module_levels, module),
