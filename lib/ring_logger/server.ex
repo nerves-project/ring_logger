@@ -9,13 +9,19 @@ defmodule RingLogger.Server do
 
   alias RingLogger.Buffer
   alias RingLogger.Client
+  alias RingLogger.Persistence
+
+  require Logger
 
   @default_max_size 1024
+  @default_persist_seconds 300
 
   defstruct clients: [],
             buffers: %{},
             default_buffer: nil,
-            index: 0
+            index: 0,
+            persist_path: nil,
+            persist_seconds: 300
 
   @spec start_link([RingLogger.server_option()]) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -79,7 +85,26 @@ defmodule RingLogger.Server do
 
     buffers = reset_buffers(Keyword.get(opts, :buffers, %{}))
 
-    {:ok, %__MODULE__{buffers: buffers, default_buffer: CircularBuffer.new(max_size)}}
+    state = %__MODULE__{
+      buffers: buffers,
+      default_buffer: CircularBuffer.new(max_size),
+      persist_path: Keyword.get(opts, :persist_path),
+      persist_seconds: Keyword.get(opts, :persist_seconds, @default_persist_seconds)
+    }
+
+    {:ok, state, {:continue, :load}}
+  end
+
+  @impl true
+  def handle_continue(:load, state) do
+    case !is_nil(state.persist_path) do
+      true ->
+        Process.send_after(self(), :tick, state.persist_seconds * 1000)
+        {:noreply, load_persist_path(state)}
+
+      false ->
+        {:noreply, state}
+    end
   end
 
   @impl GenServer
@@ -182,6 +207,20 @@ defmodule RingLogger.Server do
     {:noreply, detach_client(pid, state)}
   end
 
+  def handle_info(:tick, state) do
+    Process.send_after(self(), :tick, state.persist_seconds * 1000)
+
+    case Persistence.save(state.persist_path, merge_buffers(state)) do
+      :ok ->
+        {:noreply, state}
+
+      {:error, reason} ->
+        Logger.warn("RingLogger ran into an issue persisting the log: #{reason}")
+
+        {:noreply, state}
+    end
+  end
+
   @impl GenServer
   def terminate(_reason, state) do
     Enum.each(state.clients, fn {client_pid, _ref} -> Client.stop(client_pid) end)
@@ -229,17 +268,12 @@ defmodule RingLogger.Server do
   defp push(level, {module, message, timestamp, metadata}, state) do
     index = state.index
 
-    metadata =
-      metadata
-      |> Keyword.put(:index, index)
-      |> Keyword.put(:monotonic_time, :erlang.monotonic_time())
-
     log_entry = %{
       level: level,
       module: module,
       message: message,
       timestamp: timestamp,
-      metadata: metadata
+      metadata: Keyword.put(metadata, :index, index)
     }
 
     Enum.each(state.clients, &send_log(&1, log_entry))
@@ -271,7 +305,7 @@ defmodule RingLogger.Server do
     (Enum.map(state.buffers, & &1.circular_buffer) ++ [state.default_buffer])
     |> Enum.flat_map(& &1)
     |> Enum.sort_by(fn %{metadata: metadata} ->
-      metadata[:monotonic_time]
+      metadata[:index]
     end)
   end
 
@@ -284,5 +318,39 @@ defmodule RingLogger.Server do
         circular_buffer: CircularBuffer.new(config[:max_size])
       }
     end)
+  end
+
+  defp load_persist_path(state) do
+    case Persistence.load(state.persist_path) do
+      logs when is_list(logs) ->
+        state =
+          Enum.reduce(logs, state, fn log_entry, state ->
+            insert_log(state, log_entry)
+          end)
+
+        %{state | index: Enum.count(logs)}
+
+      {:error, :corrupted} ->
+        timestamp = :os.system_time(:microsecond)
+        micro = rem(timestamp, 1_000_000)
+
+        {date, {hours, minutes, seconds}} =
+          :calendar.system_time_to_universal_time(timestamp, :microsecond)
+
+        log_entry = %{
+          level: :warn,
+          module: Logger,
+          message: "RingLogger could not load the persistence file, it is corrupt",
+          timestamp: {date, {hours, minutes, seconds, div(micro, 1000)}},
+          metadata: [index: 1]
+        }
+
+        state = insert_log(state, log_entry)
+
+        %{state | index: 1}
+
+      {:error, _reason} ->
+        state
+    end
   end
 end

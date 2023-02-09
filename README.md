@@ -35,6 +35,9 @@ use Mix.Config
 # Add the RingLogger backend. This removes the default :console backend.
 config :logger, backends: [RingLogger]
 
+# Periodically save logs to a file, and load logs on GenServer start from this file
+config :logger, RingLogger, persist_path: "./myapp.log", persist_seconds: 300
+
 # Save messages to one circular buffer that holds 1024 entries.
 config :logger, RingLogger, max_size: 1024
 

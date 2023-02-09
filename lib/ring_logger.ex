@@ -10,6 +10,9 @@ defmodule RingLogger do
   # Add the RingLogger backend. This removes the default :console backend.
   config :logger, backends: [RingLogger]
 
+  # Periodically save logs to a file, and load logs on GenServer start from this file
+  config :logger, RingLogger, persist_path: "./myapp.log", persist_seconds: 300
+
   # Save messages to one circular buffer that holds 1024 entries.
   config :logger, RingLogger, max_size: 1024
 
@@ -56,7 +59,14 @@ defmodule RingLogger do
   alias RingLogger.Server
 
   @typedoc "Option values used by the ring logger"
-  @type server_option() :: {:max_size, pos_integer()}
+  @type server_option() ::
+          {:max_size, pos_integer()}
+          | {:buffers, %{term() => buffer()}}
+          | {:persist_path, String.t()}
+          | {:persist_seconds, pos_integer()}
+
+  @typedoc "Options to define a separate buffer based on log levels"
+  @type buffer() :: %{levels: [Logger.level()], max_size: pos_integer()}
 
   @typedoc "Callback function for printing/paging tail, grep, and next output"
   @type pager_fun() :: (IO.device(), IO.chardata() -> :ok | {:error, term()})

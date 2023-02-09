@@ -3,6 +3,8 @@ defmodule RingLoggerTest do
   doctest RingLogger
 
   import ExUnit.CaptureIO
+
+  alias RingLogger.Persistence
   alias RingLogger.TestCustomFormatter
 
   require Logger
@@ -657,6 +659,69 @@ defmodule RingLoggerTest do
       logs = String.replace(logs, "\n", " ")
 
       assert logs =~ ~r/\[error\] two.+\[error\] three.+\[debug\] baz/
+    end
+  end
+
+  describe "persistence" do
+    test "loading the log", %{io: io} do
+      Logger.remove_backend(RingLogger)
+
+      logs = [
+        %{
+          level: :debug,
+          module: Logger,
+          message: "Foo",
+          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
+          metadata: []
+        },
+        %{
+          level: :debug,
+          module: Logger,
+          message: "Bar",
+          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
+          metadata: []
+        }
+      ]
+
+      :ok = Persistence.save("test/persistence.log", logs)
+
+      # Start the backend with _just_ the persist_path and restore old
+      # config to allow other tests to run without loading a log file
+      old_env = Application.get_env(:logger, RingLogger)
+      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
+      Logger.add_backend(RingLogger)
+      Application.put_env(:logger, RingLogger, old_env)
+
+      Logger.add_backend(RingLogger)
+
+      :ok = RingLogger.attach(io: io)
+
+      buffer = RingLogger.get(0, 0)
+
+      assert Enum.count(buffer) == 2
+
+      File.rm!("test/persistence.log")
+    end
+
+    test "loading a corrupted file", %{io: io} do
+      Logger.remove_backend(RingLogger)
+
+      File.write!("test/persistence.log", "this is corrupt")
+
+      # Start the backend with _just_ the persist_path and restore old
+      # config to allow other tests to run without loading a log file
+      old_env = Application.get_env(:logger, RingLogger)
+      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
+      Logger.add_backend(RingLogger)
+      Application.put_env(:logger, RingLogger, old_env)
+
+      :ok = RingLogger.attach(io: io)
+
+      buffer = RingLogger.get(0, 0)
+
+      assert Enum.count(buffer) == 1
+
+      File.rm!("test/persistence.log")
     end
   end
 

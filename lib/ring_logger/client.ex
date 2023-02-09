@@ -112,6 +112,7 @@ defmodule RingLogger.Client do
     {io, to_print} = GenServer.call(client_pid, :next)
 
     pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+
     pager.(io, to_print)
   end
 
