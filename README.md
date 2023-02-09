@@ -58,7 +58,7 @@ config :logger, RingLogger, buffers: %{
     levels: [:emergency, :alert, :critical, :error],
     max_size: 1024
   }
-]
+}
 
 # You can also configure `RingLogger.Client` options to be used
 # with every client by default
