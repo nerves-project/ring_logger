@@ -33,7 +33,7 @@ defmodule RingLogger do
       levels: [:emergency, :alert, :critical, :error],
       max_size: 1024
     }
-  ]
+  }
   ```
 
   Or add manually:
