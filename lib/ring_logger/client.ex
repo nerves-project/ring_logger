@@ -389,7 +389,7 @@ defmodule RingLogger.Client do
 
   defp configure_colors(colors) do
     _ =
-      Logger.warn("""
+      Logger.warning("""
       unknown RingLogger.Client colors option:
 
         #{inspect(colors)}
