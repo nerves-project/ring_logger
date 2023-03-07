@@ -2,6 +2,20 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.10.0
+
+This latest release removes support for Elixir versions before 1.11 to fix
+deprecation warnings on Elixir 1.15. Elixir 1.11 to 1.14 are officially
+supported and Elixir 1.15 will be supported when released.
+
+* Improvements
+  * Support for syncing the RingBuffer to disk at peridic intervals. This
+    provides an option between a standard file logger and a fully in-memory log.
+    This doesn't provide additional history, but does enable logs to survive
+    reboots (assuming they were saved). It's disabled by default. See the
+    `:persist_path` and `:persist_seconds` options for details. Thanks to
+    @oestrich for adding this feature.
+
 ## v0.9.0
 
 This latest release removes support for Elixir versions before 1.9.
