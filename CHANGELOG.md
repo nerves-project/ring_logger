@@ -9,7 +9,7 @@ deprecation warnings on Elixir 1.15. Elixir 1.11 to 1.14 are officially
 supported and Elixir 1.15 will be supported when released.
 
 * Improvements
-  * Support for syncing the RingBuffer to disk at peridic intervals. This
+  * Support for syncing the RingBuffer to disk at periodic intervals. This
     provides an option between a standard file logger and a fully in-memory log.
     This doesn't provide additional history, but does enable logs to survive
     reboots (assuming they were saved). It's disabled by default. See the
