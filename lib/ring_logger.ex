@@ -87,7 +87,7 @@ defmodule RingLogger do
 
   @typedoc "A map holding a raw, unformatted log entry"
   @type entry() :: %{
-          map: Logger.level(),
+          level: Logger.level(),
           module: module(),
           message: Logger.message(),
           timestamp: Logger.Formatter.time(),
