@@ -64,7 +64,7 @@ defmodule RingLogger.Client do
     will take precedence.
   """
   @spec configure(GenServer.server(), RingLogger.client_options()) :: :ok
-  def configure(client_pid, config) do
+  def configure(client_pid, config) when is_list(config) do
     GenServer.call(client_pid, {:configure, config})
   end
 

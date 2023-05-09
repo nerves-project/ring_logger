@@ -13,7 +13,7 @@ defmodule RingLogger.Autoclient do
   Attach to the logger and print messages as they come in.
   """
   @spec attach(RingLogger.client_options()) :: :ok | {:error, term()}
-  def attach(opts \\ []) do
+  def attach(opts \\ []) when is_list(opts) do
     run(&Client.attach/1, opts)
   end
 
@@ -54,7 +54,7 @@ defmodule RingLogger.Autoclient do
   Print the log messages since the previous time this was called.
   """
   @spec next(RingLogger.client_options()) :: :ok | {:error, term()}
-  def next(opts \\ []) do
+  def next(opts \\ []) when is_list(opts) do
     run(&Client.next(&1, opts), opts)
   end
 
@@ -62,7 +62,7 @@ defmodule RingLogger.Autoclient do
   Print the log message count since the previous time this was called.
   """
   @spec count_next(RingLogger.client_options()) :: non_neg_integer()
-  def count_next(opts \\ []) do
+  def count_next(opts \\ []) when is_list(opts) do
     run(&Client.count_next/1, opts)
   end
 
@@ -70,7 +70,7 @@ defmodule RingLogger.Autoclient do
   Print the most recent log messages.
   """
   @spec tail(non_neg_integer(), RingLogger.client_options()) :: :ok
-  def tail(n, opts) do
+  def tail(n, opts) when is_integer(n) and is_list(opts) do
     run(&Client.tail(&1, n, opts), opts)
   end
 
@@ -78,7 +78,7 @@ defmodule RingLogger.Autoclient do
   Run a regular expression on each entry in the log and print out the matchers.
   """
   @spec grep(String.t() | Regex.t(), RingLogger.client_options()) :: :ok | {:error, term()}
-  def grep(regex_or_string, opts \\ []) do
+  def grep(regex_or_string, opts \\ []) when is_list(opts) do
     run(&Client.grep(&1, regex_or_string, opts), opts)
   end
 
@@ -87,7 +87,7 @@ defmodule RingLogger.Autoclient do
   that the next call to `tail/1` starts back at the oldest entry.
   """
   @spec reset(RingLogger.client_options()) :: :ok | {:error, term()}
-  def reset(opts \\ []) do
+  def reset(opts \\ []) when is_list(opts) do
     run(&Client.reset/1, opts)
   end
 
