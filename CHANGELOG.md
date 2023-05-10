@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.10.1
+
+* Improvements
+  * Add guards to prevent some bad API inputs from crashing in places
+    disconnected from the original calls.
+
 ## v0.10.0
 
 This latest release removes support for Elixir versions before 1.11 to fix
