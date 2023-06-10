@@ -125,7 +125,7 @@ defmodule RingLoggerTest do
     :ok = RingLogger.attach(io: io)
 
     io
-    |> handshake_log(:debug, ["Hello", ",", ' world'])
+    |> handshake_log(:debug, ["Hello", ",", ~c" world"])
     |> handshake_log(:debug, "World")
 
     RingLogger.grep(~r/H..lo/, io: io, colors: [enabled: false])
@@ -496,7 +496,7 @@ defmodule RingLoggerTest do
 
   test "logging chardata", %{io: io} do
     :ok = RingLogger.attach(io: io)
-    Logger.info('Cześć!')
+    Logger.info(~c"Cześć!")
     assert_receive {:io, message}
     assert message =~ "[info] Cześć!"
   end
