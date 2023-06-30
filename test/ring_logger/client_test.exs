@@ -95,7 +95,9 @@ defmodule RingLogger.Client.Test do
       module_levels: %{}
     ]
 
-    assert Client.config(client) == config
+    got = Client.config(client) |> Enum.sort()
+
+    assert got == config
   end
 
   @tag application_envs: [ring_logger: [colors: %{debug: :green, error: :blue}]]

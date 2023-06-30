@@ -514,7 +514,9 @@ defmodule RingLoggerTest do
         module_levels: %{}
       ]
 
-      assert RingLogger.config() == config
+      got = RingLogger.config() |> Enum.sort()
+
+      assert got == config
     end
 
     test "returns error when no attached client" do
