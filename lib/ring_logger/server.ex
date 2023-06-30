@@ -215,7 +215,7 @@ defmodule RingLogger.Server do
         {:noreply, state}
 
       {:error, reason} ->
-        Logger.warn("RingLogger ran into an issue persisting the log: #{reason}")
+        Logger.warning("RingLogger ran into an issue persisting the log: #{reason}")
 
         {:noreply, state}
     end
