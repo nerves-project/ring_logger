@@ -15,6 +15,9 @@ defmodule RingLoggerTest do
 
   setup do
     {:ok, pid} = RingLogger.TestIO.start(self())
+
+    # This next line is for Elixir 1.14 and earlier. Elixir 1.15 relies on the config.exs
+    # to remove the console backend (err, default handler).
     Logger.remove_backend(:console)
 
     # Flush any latent messages in the Logger to avoid them polluting
