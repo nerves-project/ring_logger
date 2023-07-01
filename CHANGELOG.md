@@ -2,6 +2,11 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.10.2
+
+* Fixes
+  * Fix remaining Elixir 1.15 warnings
+
 ## v0.10.1
 
 * Improvements
