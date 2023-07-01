@@ -61,9 +61,10 @@ defmodule RingLogger.Server do
     GenServer.call(__MODULE__, {:get, start_index, n})
   end
 
+  @type time() :: {{1970..10000, 1..12, 1..31}, {0..23, 0..59, 0..59, 0..999}}
   @spec log(
           Logger.level(),
-          {Logger, Logger.message(), Logger.Formatter.time(), Logger.metadata()}
+          {Logger, Logger.message(), time(), Logger.metadata()}
         ) :: :ok
   def log(level, message) do
     GenServer.cast(__MODULE__, {:log, level, message})

@@ -90,7 +90,8 @@ defmodule RingLogger do
           level: Logger.level(),
           module: module(),
           message: Logger.message(),
-          timestamp: Logger.Formatter.time(),
+          # Logger.Formatter.date_time_ms() in Elixir 1.15 and Logger.Formatter.time() in earlier versions
+          timestamp: {{1970..10000, 1..12, 1..31}, {0..23, 0..59, 0..59, 0..999}},
           metadata: Logger.metadata()
         }
 
