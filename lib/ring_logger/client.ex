@@ -149,7 +149,9 @@ defmodule RingLogger.Client do
     GenServer.call(client_pid, {:save, path})
   end
 
-  @spec grep_metadata(GenServer.server(), atom(), any(), RingLogger.client_options()) :: [binary()]
+  @spec grep_metadata(GenServer.server(), atom(), any(), RingLogger.client_options()) :: [
+          binary()
+        ]
   def grep_metadata(client_pid, key, match_value, opts) do
     {_io, to_print} = GenServer.call(client_pid, {:grep_metadata, key, match_value, opts})
 
@@ -528,5 +530,4 @@ defmodule RingLogger.Client do
   def has_metadata?(%{metadata: metadata}, key, match_value) do
     Keyword.has_key?(metadata, key) and Keyword.get(metadata, key) == match_value
   end
-
 end
