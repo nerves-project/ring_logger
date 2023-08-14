@@ -153,9 +153,10 @@ defmodule RingLogger.Client do
           binary()
         ]
   def grep_metadata(client_pid, key, match_value, opts) do
-    {_io, to_print} = GenServer.call(client_pid, {:grep_metadata, key, match_value, opts})
+    {io, to_print} = GenServer.call(client_pid, {:grep_metadata, key, match_value, opts})
 
-    to_print
+    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+    pager.(io, to_print)
   end
 
   @doc """
@@ -267,9 +268,9 @@ defmodule RingLogger.Client do
     formatted_buff =
       for message <- Server.get(0, 0),
           should_print?(message, state),
+          has_metadata?(message, key, match_value),
           formatted = format_message(message, state),
-          bin = IO.chardata_to_string(formatted),
-          do: {bin, has_metadata?(message, key, match_value)}
+          do: IO.chardata_to_string(formatted)
 
     to_return =
       for {bin, matched?} <- formatted_buff, matched? do
