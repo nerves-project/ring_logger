@@ -149,6 +149,13 @@ defmodule RingLogger.Client do
     GenServer.call(client_pid, {:save, path})
   end
 
+  @spec grep_metadata(GenServer.server(), atom(), any(), RingLogger.client_options()) :: [binary()]
+  def grep_metadata(client_pid, key, match_value, opts) do
+    {_io, to_print} = GenServer.call(client_pid, {:grep_metadata, key, match_value, opts})
+
+    to_print
+  end
+
   @doc """
   Run a regular expression on each entry in the log and print out the matchers.
 
@@ -252,6 +259,27 @@ defmodule RingLogger.Client do
 
   def handle_call(:reset, _from, state) do
     {:reply, :ok, %{state | index: 0}}
+  end
+
+  @spec has_metadata?(RingLogger.entry(), atom(), any()) :: boolean()
+  def has_metadata?(%{metadata: metadata}, key, match_value) do
+    Keyword.has_key?(metadata, key) and Keyword.get(metadata, key) == match_value
+  end
+
+  def handle_call({:grep_metadata, key, match_value, _opts}, _from, state) do
+    formatted_buff =
+      for {message, i} <- Enum.with_index(Server.get(0, 0)),
+          should_print?(message, state),
+          formatted = format_message(message, state),
+          bin = IO.chardata_to_string(formatted),
+          do: {bin, has_metadata?(message, key, match_value), i}
+
+    to_return =
+      for {bin, matched?, i} <- formatted_buff, matched? do
+        if matched?, do: bin, else: []
+      end
+
+    {:reply, {state.io, to_return}, state}
   end
 
   def handle_call({:grep, regex, opts}, _from, state) do

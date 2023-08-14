@@ -218,6 +218,17 @@ defmodule RingLogger do
   defdelegate grep(regex_or_string, opts \\ []), to: Autoclient
 
   @doc """
+  Return a list of formatted log entries that match the given metadata key-value pair.
+
+  For example:
+
+  iex> RingLogger.grep(:session_id, "abc")
+  ["session_id=abc Logged in", "session_id=abc GET /users"]
+  """
+  @spec grep_metadata(atom(), any()) :: [binary()]
+  defdelegate grep_metadata(key, match_value), to: Autoclient
+
+  @doc """
   Helper method for formatting log messages per the current client's
   configuration.
   """

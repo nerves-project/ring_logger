@@ -83,6 +83,13 @@ defmodule RingLogger.Autoclient do
   end
 
   @doc """
+  Return a list of formatted log entries that match the given metadata key-value pair.
+  """
+  def grep_metadata(key, match_value) do
+    run(&Client.grep_metadata(&1, key, match_value, []), [])
+  end
+
+  @doc """
   Reset the index used to keep track of the position in the log for `tail/1` so
   that the next call to `tail/1` starts back at the oldest entry.
   """
