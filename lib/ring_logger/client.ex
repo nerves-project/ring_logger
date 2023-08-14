@@ -149,11 +149,20 @@ defmodule RingLogger.Client do
     GenServer.call(client_pid, {:save, path})
   end
 
-  @spec grep_metadata(GenServer.server(), atom(), any(), RingLogger.client_options()) :: [
-          binary()
-        ]
-  def grep_metadata(client_pid, key, match_value, opts) do
-    {io, to_print} = GenServer.call(client_pid, {:grep_metadata, key, match_value, opts})
+  @spec grep_metadata(GenServer.server(), atom(), Regex.t() | any(), RingLogger.client_options()) ::
+          [
+            binary()
+          ]
+  def grep_metadata(client_pid, key, match_value, opts)
+
+  def grep_metadata(client_pid, key, match_value, opts) when is_binary(match_value) do
+    with {:ok, regex} <- Regex.compile(match_value) do
+      grep_metadata(client_pid, key, regex, opts)
+    end
+  end
+
+  def grep_metadata(client_pid, key, %Regex{} = regex, opts) do
+    {io, to_print} = GenServer.call(client_pid, {:grep_metadata, key, regex, opts})
 
     pager = Keyword.get(opts, :pager, &IO.binwrite/2)
     pager.(io, to_print)
