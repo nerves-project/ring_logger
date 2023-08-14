@@ -261,21 +261,16 @@ defmodule RingLogger.Client do
     {:reply, :ok, %{state | index: 0}}
   end
 
-  @spec has_metadata?(RingLogger.entry(), atom(), any()) :: boolean()
-  def has_metadata?(%{metadata: metadata}, key, match_value) do
-    Keyword.has_key?(metadata, key) and Keyword.get(metadata, key) == match_value
-  end
-
   def handle_call({:grep_metadata, key, match_value, _opts}, _from, state) do
     formatted_buff =
-      for {message, i} <- Enum.with_index(Server.get(0, 0)),
+      for message <- Server.get(0, 0),
           should_print?(message, state),
           formatted = format_message(message, state),
           bin = IO.chardata_to_string(formatted),
-          do: {bin, has_metadata?(message, key, match_value), i}
+          do: {bin, has_metadata?(message, key, match_value)}
 
     to_return =
-      for {bin, matched?, i} <- formatted_buff, matched? do
+      for {bin, matched?} <- formatted_buff, matched? do
         if matched?, do: bin, else: []
       end
 
@@ -528,4 +523,10 @@ defmodule RingLogger.Client do
       []
     end
   end
+
+  @spec has_metadata?(RingLogger.entry(), atom(), any()) :: boolean()
+  def has_metadata?(%{metadata: metadata}, key, match_value) do
+    Keyword.has_key?(metadata, key) and Keyword.get(metadata, key) == match_value
+  end
+
 end

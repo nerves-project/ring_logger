@@ -222,8 +222,8 @@ defmodule RingLogger do
 
   For example:
 
-  iex> RingLogger.grep(:session_id, "abc")
-  ["session_id=abc Logged in", "session_id=abc GET /users"]
+  iex> RingLogger.grep_metadata(:session_id, "abc")
+  []
   """
   @spec grep_metadata(atom(), any()) :: [binary()]
   defdelegate grep_metadata(key, match_value), to: Autoclient
