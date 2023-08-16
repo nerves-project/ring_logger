@@ -228,7 +228,7 @@ defmodule RingLogger do
   iex> RingLogger.grep_metadata(:session_id, ~r/something/)
   :ok
   """
-  @spec grep_metadata(atom(), any()) :: [binary()]
+  @spec grep_metadata(key :: atom(), any()) :: :ok | {:error, term()}
   defdelegate grep_metadata(key, match_value), to: Autoclient
 
   @doc """

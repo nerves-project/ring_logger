@@ -149,10 +149,7 @@ defmodule RingLogger.Client do
     GenServer.call(client_pid, {:save, path})
   end
 
-  @spec grep_metadata(GenServer.server(), atom(), Regex.t() | any(), RingLogger.client_options()) ::
-          [
-            binary()
-          ]
+  @spec grep_metadata(GenServer.server(), atom(), any(), RingLogger.client_options()) :: :ok | {:error, term()}
   def grep_metadata(client_pid, key, match_value, opts)
 
   def grep_metadata(client_pid, key, match_value, opts) when is_binary(match_value) do
@@ -281,10 +278,6 @@ defmodule RingLogger.Client do
           formatted = format_message(message, state),
           do: IO.chardata_to_string(formatted)
 
-    to_return =
-      for {bin, matched?} <- formatted_buff, matched? do
-        if matched?, do: bin, else: []
-      end
 
     {:reply, {state.io, to_return}, state}
   end
@@ -538,6 +531,11 @@ defmodule RingLogger.Client do
 
   @spec has_metadata?(RingLogger.entry(), atom(), any()) :: boolean()
   def has_metadata?(%{metadata: metadata}, key, match_value) do
-    Keyword.has_key?(metadata, key) and Keyword.get(metadata, key) == match_value
+    case metadata[key] do
+      nil -> false
+      val when is_binary(val) -> val =~ match_val
+      val when val == match_val -> true
+      _ -> false
+    end
   end
 end
