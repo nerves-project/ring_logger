@@ -195,7 +195,7 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "a2")
     |> handshake_log(:debug, "a3")
 
-    RingLogger.grep_metadata(:session_id, "user_1")
+    :ok = RingLogger.grep_metadata(:session_id, "user_1")
     assert_receive {:io, message}
     refute message =~ "[debug] b1"
     refute message =~ "[debug] b2"
@@ -221,7 +221,7 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "a2")
     |> handshake_log(:debug, "a3")
 
-    RingLogger.grep_metadata(:session_id, ~r/user/)
+    :ok = RingLogger.grep_metadata(:session_id, ~r/user/)
     assert_receive {:io, message}
     refute message =~ "[debug] b1"
     refute message =~ "[debug] b2"
