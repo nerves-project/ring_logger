@@ -149,7 +149,12 @@ defmodule RingLogger.Client do
     GenServer.call(client_pid, {:save, path})
   end
 
-  @spec grep_metadata(GenServer.server(), atom(), String.t() | Regex.t(), RingLogger.client_options()) ::
+  @spec grep_metadata(
+          GenServer.server(),
+          atom(),
+          String.t() | Regex.t(),
+          RingLogger.client_options()
+        ) ::
           :ok | {:error, term()}
   def grep_metadata(client_pid, key, match_value, opts)
 
