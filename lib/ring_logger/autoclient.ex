@@ -85,7 +85,7 @@ defmodule RingLogger.Autoclient do
   @doc """
   Return a list of formatted log entries that match the given metadata key-value pair.
   """
-  @spec grep_metadata(atom(), Regex.t() | any()) :: :ok | {:error, term()}
+  @spec grep_metadata(atom(), String.t() | Regex.t()) :: :ok | {:error, term()}
   def grep_metadata(key, match_value) do
     run(&Client.grep_metadata(&1, key, match_value, []), [])
   end

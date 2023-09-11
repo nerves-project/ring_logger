@@ -149,7 +149,7 @@ defmodule RingLogger.Client do
     GenServer.call(client_pid, {:save, path})
   end
 
-  @spec grep_metadata(GenServer.server(), atom(), any(), RingLogger.client_options()) ::
+  @spec grep_metadata(GenServer.server(), atom(), String.t() | Regex.t(), RingLogger.client_options()) ::
           :ok | {:error, term()}
   def grep_metadata(client_pid, key, match_value, opts)
 
@@ -529,7 +529,7 @@ defmodule RingLogger.Client do
     end
   end
 
-  @spec has_metadata?(RingLogger.entry(), atom(), any()) :: boolean()
+  @spec has_metadata?(RingLogger.entry(), atom(), String.t() | Regex.t()) :: boolean()
   def has_metadata?(%{metadata: metadata}, key, match_value) do
     case metadata[key] do
       nil -> false
