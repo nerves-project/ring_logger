@@ -40,8 +40,8 @@ defmodule RingLoggerTest do
   # The RingLogger needs to be attached for this to work. This makes
   # logging synchronous so that we can test tail, next, grep, etc. that
   # rely on the messages being received by RingLogger.
-  defp handshake_log(io, level, message) do
-    Logger.log(level, message)
+  defp handshake_log(io, level, message, metadata \\ []) do
+    Logger.log(level, message, metadata)
     assert_receive {:io, msg}
     assert String.contains?(msg, to_string(level))
 
@@ -180,6 +180,57 @@ defmodule RingLoggerTest do
     assert message =~ "[debug] howdy"
     assert message =~ "[debug] a1"
     assert message =~ "[debug] a2"
+    refute message =~ "[debug] a3"
+  end
+
+  test "can grep based on metadata with exact match", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:debug, "b3")
+    |> handshake_log(:debug, "b2")
+    |> handshake_log(:debug, "b1")
+    |> handshake_log(:debug, "howdy", session_id: "user_1")
+    |> handshake_log(:debug, "a1")
+    |> handshake_log(:debug, "a2")
+    |> handshake_log(:debug, "a3")
+
+    :ok = RingLogger.grep_metadata(:session_id, "user_1")
+    assert_receive {:io, message}
+    refute message =~ "[debug] b1"
+    refute message =~ "[debug] b2"
+    refute message =~ "[debug] b3"
+    assert message =~ "howdy"
+    refute message =~ "[debug] a1"
+    refute message =~ "[debug] a2"
+    refute message =~ "[debug] a3"
+  end
+
+  test "can grep based on metadata with regexp", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    io
+    |> handshake_log(:debug, "b3")
+    |> handshake_log(:debug, "b2")
+    |> handshake_log(:debug, "b1")
+    |> handshake_log(:debug, "howdy", session_id: "user_1")
+    |> handshake_log(:debug, "hello", session_id: "user_2")
+    |> handshake_log(:debug, "john", session_id: "irrelevant_1")
+    |> handshake_log(:debug, "doe", session_id: "irrelevant_2")
+    |> handshake_log(:debug, "a1")
+    |> handshake_log(:debug, "a2")
+    |> handshake_log(:debug, "a3")
+
+    :ok = RingLogger.grep_metadata(:session_id, ~r/user/)
+    assert_receive {:io, message}
+    refute message =~ "[debug] b1"
+    refute message =~ "[debug] b2"
+    refute message =~ "[debug] b3"
+    assert message =~ "howdy" or message =~ "hello"
+    refute message =~ "john"
+    refute message =~ "joe"
+    refute message =~ "[debug] a1"
+    refute message =~ "[debug] a2"
     refute message =~ "[debug] a3"
   end
 
