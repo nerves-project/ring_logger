@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.10.3
+
+* Improvements
+  * Add ability to grep text of a metadata key (thanks @levex! :heart:).
+    See `RingLogger.grep_metadata/2` for more info.
+
 ## v0.10.2
 
 * Fixes

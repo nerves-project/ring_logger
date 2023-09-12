@@ -1,7 +1,7 @@
 defmodule RingLogger.MixProject do
   use Mix.Project
 
-  @version "0.10.2"
+  @version "0.10.3"
   @source_url "https://github.com/nerves-project/ring_logger"
 
   def project do
