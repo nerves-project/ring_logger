@@ -535,7 +535,7 @@ defmodule RingLogger.Client do
   end
 
   @spec has_metadata?(RingLogger.entry(), atom(), String.t() | Regex.t()) :: boolean()
-  def has_metadata?(%{metadata: metadata}, key, match_value) do
+  defp has_metadata?(%{metadata: metadata}, key, match_value) do
     case metadata[key] do
       nil -> false
       val when is_binary(val) -> val =~ match_value
