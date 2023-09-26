@@ -759,6 +759,60 @@ defmodule RingLoggerTest do
       File.rm!("test/persistence.log")
     end
 
+    test "loading the log with multiple buffers", %{io: io} do
+      Logger.remove_backend(RingLogger)
+
+      logs = [
+        %{
+          level: :debug,
+          module: Logger,
+          message: "Foo",
+          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
+          metadata: []
+        },
+        %{
+          level: :debug,
+          module: Logger,
+          message: "Bar",
+          timestamp: {{2023, 2, 8}, {13, 58, 31, 344}},
+          metadata: []
+        },
+        %{
+          level: :info,
+          module: Logger,
+          message: "Baz",
+          timestamp: {{2023, 2, 8}, {13, 58, 31, 345}},
+          metadata: []
+        }
+      ]
+
+      :ok = Persistence.save("test/persistence.log", logs)
+
+      # Start the backend with _just_ the persist_path and restore old
+      # config to allow other tests to run without loading a log file
+      old_env = Application.get_env(:logger, RingLogger)
+
+      new_env = [
+        persist_path: "test/persistence.log",
+        max_size: 3,
+        buffers: %{debug: %{levels: [:debug], max_size: 2}}
+      ]
+
+      Application.put_env(:logger, RingLogger, new_env)
+      Logger.add_backend(RingLogger)
+      Application.put_env(:logger, RingLogger, old_env)
+
+      Logger.add_backend(RingLogger)
+
+      :ok = RingLogger.attach(io: io)
+
+      buffer = RingLogger.get(0, 0)
+
+      assert Enum.count(buffer) == 3
+
+      File.rm!("test/persistence.log")
+    end
+
     test "loading a corrupted file", %{io: io} do
       Logger.remove_backend(RingLogger)
 
