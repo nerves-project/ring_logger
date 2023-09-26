@@ -2,6 +2,13 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.10.4
+
+* Fixes
+  * History from loaded persistance file would be reset and lost if multiple
+    buffers were configured outside the default buffer when RingLogger was
+    reconfigured (at startup or runtime)
+
 ## v0.10.3
 
 * Improvements
