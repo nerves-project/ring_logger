@@ -137,6 +137,8 @@ defmodule RingLogger.Server do
   end
 
   def handle_call({:configure, opts}, _from, state) do
+    logs = merge_buffers(state)
+
     state =
       case Keyword.get(opts, :max_size) do
         nil ->
@@ -154,6 +156,9 @@ defmodule RingLogger.Server do
         buffers ->
           %__MODULE__{state | buffers: reset_buffers(buffers)}
       end
+
+    # Reinsert old buffers to let new max size filter out
+    state = Enum.reduce(logs, state, &insert_log(&2, &1))
 
     {:reply, :ok, state}
   end
