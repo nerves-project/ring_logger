@@ -2,6 +2,13 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.10.5
+
+* Fixes
+  * Reset potentially outdated indexes when persisted logs are loaded. Fixes
+    the case where the persisted logs might have a much higher index than the
+    current buffer, so every new log gets added before the loaded logs
+
 ## v0.10.4
 
 * Fixes
