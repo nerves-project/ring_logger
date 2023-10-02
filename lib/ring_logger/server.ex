@@ -139,14 +139,9 @@ defmodule RingLogger.Server do
   def handle_call({:configure, opts}, _from, state) do
     logs = merge_buffers(state)
 
-    state =
-      case Keyword.get(opts, :max_size) do
-        nil ->
-          state
+    max_size = Keyword.get(opts, :max_size, @default_max_size)
 
-        max_size ->
-          %__MODULE__{state | default_buffer: CircularBuffer.new(max_size)}
-      end
+    state = %__MODULE__{state | default_buffer: CircularBuffer.new(max_size)}
 
     state =
       case Keyword.get(opts, :buffers) do
@@ -330,7 +325,10 @@ defmodule RingLogger.Server do
     case Persistence.load(state.persist_path) do
       logs when is_list(logs) ->
         state =
-          Enum.reduce(logs, state, fn log_entry, state ->
+          logs
+          |> Enum.with_index()
+          |> Enum.reduce(state, fn {log_entry, index}, state ->
+            log_entry = %{log_entry | metadata: Keyword.put(log_entry.metadata, :index, index)}
             insert_log(state, log_entry)
           end)
 

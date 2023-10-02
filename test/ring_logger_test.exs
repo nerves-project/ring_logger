@@ -833,6 +833,50 @@ defmodule RingLoggerTest do
 
       File.rm!("test/persistence.log")
     end
+
+    test "loading the log resets indexes", %{io: io} do
+      Logger.remove_backend(RingLogger)
+
+      logs = [
+        %{
+          level: :debug,
+          module: Logger,
+          message: "Foo",
+          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
+          metadata: [index: 5000]
+        },
+        %{
+          level: :debug,
+          module: Logger,
+          message: "Bar",
+          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
+          metadata: [index: 6000]
+        }
+      ]
+
+      :ok = Persistence.save("test/persistence.log", logs)
+
+      # Start the backend with _just_ the persist_path and restore old
+      # config to allow other tests to run without loading a log file
+      old_env = Application.get_env(:logger, RingLogger)
+      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
+      Logger.add_backend(RingLogger)
+      Application.put_env(:logger, RingLogger, old_env)
+
+      Logger.add_backend(RingLogger)
+
+      :ok = RingLogger.attach(io: io)
+
+      [foo, bar] = RingLogger.get(0, 0)
+
+      assert foo.message == "Foo"
+      assert foo.metadata[:index] == 0
+
+      assert bar.message == "Bar"
+      assert bar.metadata[:index] == 1
+
+      File.rm!("test/persistence.log")
+    end
   end
 
   defp capture_log(fun) do
