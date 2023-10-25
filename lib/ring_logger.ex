@@ -194,6 +194,12 @@ defmodule RingLogger do
   def tail(n, opts), do: Autoclient.tail(n, opts)
 
   @doc """
+  Starts the Ring Logger Viewer TUI app on the current prompt
+  """
+  @spec viewer() :: :ignore | {:error, any()} | {:ok, pid()}
+  def viewer(), do: RingLogger.Viewer.start_link()
+
+  @doc """
   Reset the index into the log for `next/1` to the oldest entry.
   """
   @spec reset(client_options()) :: :ok | {:error, term()}
