@@ -25,6 +25,7 @@ defmodule RingLogger.Viewer do
 
   @init_state %{
     current_screen: :list,
+    running: true,
     current_page: 0,
     screen_dims: %{w: 0, h: 0},
     lowest_log_level: nil,
@@ -62,7 +63,10 @@ defmodule RingLogger.Viewer do
   def draw(state) do
     screen_dims = get_screen_dims()
     new_state = %{state | screen_dims: screen_dims} |> do_draw()
-    draw(new_state)
+
+    if new_state.running do
+      draw(new_state)
+    end
   end
 
   defp get_screen_dims() do
@@ -239,9 +243,8 @@ defmodule RingLogger.Viewer do
     end
   end
 
-  defp command("e", _cmd_string, state, _current_logs) do
-    Process.exit(self(), :normal)
-    state
+  defp command(cmd_exit, _cmd_string, state, _current_logs) when cmd_exit in ["e", "q"] do
+    %{state | running: false}
   end
 
   defp command("n", _cmd_string, state, _current_logs) do
@@ -404,7 +407,7 @@ defmodule RingLogger.Viewer do
       "\t(l)evel [log_level] - filter to specified level (or higher), leaving level blank clears the filter.\n",
       "\t(a)pp [atom] - adds/remove an atom from the 'application' metadata filter, leaving argument blank clears filter.\n",
       "\t0..n - input any table index number to fully inspect a log line, and view its metadata.\n",
-      "\t(e)xit - closes the log viewer.\n",
+      "\t(e)xit or (q)uit - closes the log viewer.\n",
       "\t(h)elp / ? - show this screen.\n",
       "\n----------\n"
     ])
