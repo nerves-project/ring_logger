@@ -26,6 +26,7 @@ defmodule RingLogger.Viewer do
   @init_state %{
     current_screen: :list,
     running: true,
+    last_cmd_string: nil,
     current_page: 0,
     screen_dims: %{w: 0, h: 0},
     lowest_log_level: nil,
@@ -235,15 +236,24 @@ defmodule RingLogger.Viewer do
 
   #### Command Handler Functions
 
+  # Use last command string (if there was one) when no cmd given
+  defp process_command(nil, state, _current_logs), do: state
+
+  defp process_command("", %{last_cmd_string: last_cmd} = state, current_logs),
+    do: process_command(last_cmd, state, current_logs)
+
   defp process_command(cmd_string, state, current_logs) do
-    if Integer.parse(cmd_string) != :error do
-      {index, _rest} = Integer.parse(cmd_string)
-      _ = inspect_entry(index, state, current_logs)
-      state
-    else
-      first_char = String.at(cmd_string, 0) |> String.downcase()
-      command(first_char, cmd_string, state, current_logs)
-    end
+    new_state =
+      if Integer.parse(cmd_string) != :error do
+        {index, _rest} = Integer.parse(cmd_string)
+        _ = inspect_entry(index, state, current_logs)
+        state
+      else
+        first_char = String.at(cmd_string, 0) |> String.downcase()
+        command(first_char, cmd_string, state, current_logs)
+      end
+
+    %{new_state | last_cmd_string: cmd_string}
   end
 
   defp command(cmd_exit, _cmd_string, state, _current_logs) when cmd_exit in ["e", "q"] do
