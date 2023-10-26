@@ -50,7 +50,6 @@ defmodule RingLogger.Viewer do
       raise "Sorry, your terminal needs to be at least #{@min_height} rows high to use this tool!"
     end
 
-    Process.send_after(self(), :draw, 150)
     IO.puts("Starting RingLogger Viewer...")
 
     starting_state = @init_state |> get_log_snapshot()
