@@ -197,7 +197,7 @@ defmodule RingLogger do
   Starts the Ring Logger Viewer TUI app on the current prompt
   """
   @spec viewer() :: :ignore | {:error, any()} | {:ok, pid()}
-  def viewer(), do: RingLogger.Viewer.start_link()
+  def viewer(), do: RingLogger.Viewer.view()
 
   @doc """
   Reset the index into the log for `next/1` to the oldest entry.

@@ -13,8 +13,6 @@ defmodule RingLogger.Viewer do
   Type `exit` or `e` to exit the viewer.
   """
 
-  use GenServer
-
   @headers ["#", "Lvl", "App", "Msg", "Time"]
   @header_lines 2
   @footer_lines 2
@@ -38,13 +36,7 @@ defmodule RingLogger.Viewer do
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
-  @spec start_link(keyword()) :: :ignore | {:error, any()} | {:ok, pid()}
-  def start_link(options \\ []) do
-    GenServer.start_link(__MODULE__, options, name: __MODULE__)
-  end
-
-  @impl GenServer
-  def init(_options) do
+  def view() do
     screen_dims = get_screen_dims()
 
     if screen_dims.w <= @min_width do
@@ -58,23 +50,19 @@ defmodule RingLogger.Viewer do
     Process.send_after(self(), :draw, 150)
     IO.puts("Starting RingLogger Viewer...")
 
-    state = @init_state |> get_log_snapshot()
+    starting_state = @init_state |> get_log_snapshot()
 
-    {:ok,
-     %{
-       state
-       | screen_dims: screen_dims
-     }}
+    draw(starting_state)
+
+    IEx.dont_display_result()
   end
 
   #### Drawing and IO Functions
 
-  @impl GenServer
-  def handle_info(:draw, state) do
+  def draw(state) do
     screen_dims = get_screen_dims()
     new_state = %{state | screen_dims: screen_dims} |> do_draw()
-    Process.send_after(self(), :draw, 150)
-    {:noreply, new_state}
+    draw(new_state)
   end
 
   defp get_screen_dims() do
