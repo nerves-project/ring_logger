@@ -96,7 +96,6 @@ defmodule RingLogger.Viewer do
         string
         |> to_string()
         |> String.trim()
-        |> String.downcase()
         |> process_command(state, filtered_logs)
     end
   end
@@ -235,7 +234,7 @@ defmodule RingLogger.Viewer do
       inspect_entry(index, state, current_logs)
       state
     else
-      first_char = String.at(cmd_string, 0)
+      first_char = String.at(cmd_string, 0) |> String.downcase()
       command(first_char, cmd_string, state, current_logs)
     end
   end
