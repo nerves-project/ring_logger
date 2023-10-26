@@ -296,11 +296,18 @@ defmodule RingLogger.Viewer do
   defp jump_to_page(cmd_string, state) do
     split = String.split(cmd_string)
 
-    with 2 <- length(split), {index, _} <- Integer.parse(Enum.at(split, 1)) do
-      new_page = max(0, index)
-      %{state | current_page: new_page}
-    else
-      _ -> state
+    case length(split) do
+      1 ->
+        per_page = state.screen_dims.h - (@header_lines + @footer_lines)
+        last_page = div(length(state.raw_logs), per_page)
+        %{state | current_page: last_page}
+
+      2 ->
+        {page, _} = Integer.parse(Enum.at(split, 1))
+        %{state | current_page: max(0, page)}
+
+      _ ->
+        state
     end
   rescue
     _ -> state
@@ -391,7 +398,7 @@ defmodule RingLogger.Viewer do
       "Commands:\n",
       "\t(n)ext - navigate to the next page of the log buffer.\n",
       "\t(p)rev - navigate to the previous page of the log buffer.\n",
-      "\t(j)ump - jump to a page number.\n",
+      "\t(j)ump [number] - jump to a page number. leaving number off jumps to the last page.\n",
       "\t(r)eset - reset the log viewer, clears all filters and resets the current page.\n",
       "\t(b)oot - toggles a 'since most recent boot' filter.\n",
       "\t(g)rep [regex/string] - regex/string search expression, leaving argument blank clears filter.\n",
