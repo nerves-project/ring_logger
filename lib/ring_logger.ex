@@ -196,7 +196,7 @@ defmodule RingLogger do
   @doc """
   Starts the Ring Logger Viewer TUI app on the current prompt
   """
-  @spec viewer() :: :ignore | {:error, any()} | {:ok, pid()}
+  @spec viewer() :: :ok
   def viewer(), do: RingLogger.Viewer.view()
 
   @doc """

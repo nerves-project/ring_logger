@@ -37,6 +37,7 @@ defmodule RingLogger.Viewer do
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
+  @spec view() :: :ok
   def view() do
     screen_dims = get_screen_dims()
 
@@ -55,12 +56,12 @@ defmodule RingLogger.Viewer do
 
     draw(starting_state)
 
-    IEx.dont_display_result()
+    :ok
   end
 
   #### Drawing and IO Functions
 
-  def draw(state) do
+  defp draw(state) do
     screen_dims = get_screen_dims()
     new_state = %{state | screen_dims: screen_dims} |> do_draw()
 
@@ -92,8 +93,10 @@ defmodule RingLogger.Viewer do
     print_footer(state.screen_dims)
 
     case IO.gets(compute_prompt(state)) do
-      {:error, :interrupted} ->
-        Process.exit(self(), :normal)
+      {:error, _} ->
+        %{state | running: false}
+
+      :eof ->
         state
 
       string ->
@@ -235,7 +238,7 @@ defmodule RingLogger.Viewer do
   defp process_command(cmd_string, state, current_logs) do
     if Integer.parse(cmd_string) != :error do
       {index, _rest} = Integer.parse(cmd_string)
-      inspect_entry(index, state, current_logs)
+      _ = inspect_entry(index, state, current_logs)
       state
     else
       first_char = String.at(cmd_string, 0) |> String.downcase()
@@ -245,6 +248,11 @@ defmodule RingLogger.Viewer do
 
   defp command(cmd_exit, _cmd_string, state, _current_logs) when cmd_exit in ["e", "q"] do
     %{state | running: false}
+  end
+
+  defp command(help_cmd, _cmd_string, state, _current_logs) when help_cmd in ["h", "?"] do
+    _ = show_help(state)
+    state
   end
 
   defp command("n", _cmd_string, state, _current_logs) do
@@ -277,16 +285,6 @@ defmodule RingLogger.Viewer do
 
   defp command("g", cmd_string, state, _current_logs) do
     add_remove_grep(cmd_string, state) |> get_log_snapshot()
-  end
-
-  defp command("h", _cmd_string, state, _current_logs) do
-    show_help(state)
-    state
-  end
-
-  defp command("?", _cmd_string, state, _current_logs) do
-    show_help(state)
-    state
   end
 
   defp command(_, _cmd_string, state, _current_logs), do: state
@@ -330,7 +328,7 @@ defmodule RingLogger.Viewer do
         "\n----------\n"
       ])
 
-      IO.gets("Press Enter To Close...")
+      _ = IO.gets("Press Enter To Close...")
     end
   end
 
@@ -412,7 +410,7 @@ defmodule RingLogger.Viewer do
       "\n----------\n"
     ])
 
-    IO.gets("Press Enter To Close...")
+    _ = IO.gets("Press Enter To Close...")
   end
 
   #### Misc Util Functions
