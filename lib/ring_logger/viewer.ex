@@ -13,10 +13,10 @@ defmodule RingLogger.Viewer do
   Type `exit` or `e` to exit the viewer.
   """
 
-  @headers ["#", "Lvl", "App", "Msg", "Time"]
+  @headers ["#", "Level", "Application", "Message", "Time"]
   @header_lines 2
   @footer_lines 2
-  @width_of_layout_items 55
+  @width_of_layout_items 53
   @min_log_width 30
   @min_log_entries 10
 
@@ -139,7 +139,7 @@ defmodule RingLogger.Viewer do
 
     [
       :io_lib.format(
-        "~-3ts | ~-7ts | ~-12ts | ~-#{log_size}ts | ~-20ts~n",
+        "~-3ts | ~-5ts | ~-12ts | ~-#{log_size}ts | ~-20ts~n",
         @headers
       ),
       :binary.copy("-", screen_dims.w)
@@ -162,7 +162,7 @@ defmodule RingLogger.Viewer do
 
     [
       :io_lib.format(
-        "~-3ts | #{get_color(entry.level)}~-7ts#{IO.ANSI.reset()} | ~-12ts | ~-#{log_size}ts | ~-20ts~n",
+        "~-3ts | ~ts#{IO.ANSI.reset()} | ~-12ts | ~-#{log_size}ts | ~-20ts~n",
         [
           to_string(index),
           Atom.to_string(entry.level),
