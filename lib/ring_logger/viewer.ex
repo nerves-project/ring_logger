@@ -249,54 +249,53 @@ defmodule RingLogger.Viewer do
         state
       else
         first_char = String.at(cmd_string, 0) |> String.downcase()
-        command(first_char, cmd_string, state, current_logs)
+        command(first_char, cmd_string, state)
       end
 
     %{new_state | last_cmd_string: cmd_string}
   end
 
-  defp command(cmd_exit, _cmd_string, state, _current_logs) when cmd_exit in ["e", "q"] do
+  defp command(cmd_exit, _cmd_string, state) when cmd_exit in ["e", "q"] do
     %{state | running: false}
   end
 
-  defp command(help_cmd, _cmd_string, state, _current_logs) when help_cmd in ["h", "?"] do
-    _ = show_help(state)
-    state
+  defp command(help_cmd, _cmd_string, state) when help_cmd in ["h", "?"] do
+    show_help(state)
   end
 
-  defp command("n", _cmd_string, state, _current_logs) do
+  defp command("n", _cmd_string, state) do
     next_page(state)
   end
 
-  defp command("p", _cmd_string, state, _current_logs) do
+  defp command("p", _cmd_string, state) do
     prev_page(state)
   end
 
-  defp command("j", cmd_string, state, _current_logs) do
+  defp command("j", cmd_string, state) do
     jump_to_page(cmd_string, state)
   end
 
-  defp command("r", _cmd_string, _state, _current_logs) do
+  defp command("r", _cmd_string, _state) do
     @init_state |> get_log_snapshot()
   end
 
-  defp command("b", _cmd_string, state, _current_logs) do
+  defp command("b", _cmd_string, state) do
     %{state | before_boot: !state.before_boot} |> get_log_snapshot()
   end
 
-  defp command("l", cmd_string, state, _current_logs) do
+  defp command("l", cmd_string, state) do
     set_log_level(cmd_string, state) |> get_log_snapshot()
   end
 
-  defp command("a", cmd_string, state, _current_logs) do
+  defp command("a", cmd_string, state) do
     add_remove_app(cmd_string, state) |> get_log_snapshot()
   end
 
-  defp command("g", cmd_string, state, _current_logs) do
+  defp command("g", cmd_string, state) do
     add_remove_grep(cmd_string, state) |> get_log_snapshot()
   end
 
-  defp command(_, _cmd_string, state, _current_logs), do: state
+  defp command(_, _cmd_string, state), do: state
 
   defp next_page(%{current_page: n} = state), do: %{state | current_page: n + 1}
   defp prev_page(%{current_page: 0} = state), do: %{state | current_page: 0}
