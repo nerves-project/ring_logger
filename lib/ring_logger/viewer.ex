@@ -78,19 +78,19 @@ defmodule RingLogger.Viewer do
   end
 
   defp do_draw(state) do
-    reset_screen(state.screen_dims)
-    print_header(state.screen_dims)
-
     filtered_logs =
       state.raw_logs
       |> paginate_logs(state)
 
-    _ =
+    [
+      reset_screen(),
+      header(state.screen_dims),
       Enum.with_index(filtered_logs, fn entry, idx ->
-        print_log(state.screen_dims, entry, idx)
-      end)
-
-    print_footer(state.screen_dims)
+        format_log(state.screen_dims, entry, idx)
+      end),
+      footer(state.screen_dims)
+    ]
+    |> IO.write()
 
     case IO.gets(compute_prompt(state)) do
       {:error, _} ->
@@ -134,7 +134,7 @@ defmodule RingLogger.Viewer do
     "#{prefix}#{boot_suffix}#{grep_suffix}#{level_suffix}#{app_suffix}>"
   end
 
-  defp print_header(screen_dims) do
+  defp header(screen_dims) do
     log_size = screen_dims.w - @width_of_layout_items
 
     [
@@ -144,18 +144,16 @@ defmodule RingLogger.Viewer do
       ),
       :binary.copy("-", screen_dims.w)
     ]
-    |> IO.write()
   end
 
-  defp print_footer(screen_dims) do
+  defp footer(screen_dims) do
     [
       IO.ANSI.cursor(screen_dims.h, 0),
       IO.ANSI.reset()
     ]
-    |> IO.write()
   end
 
-  defp print_log(screen_dims, entry, index) do
+  defp format_log(screen_dims, entry, index) do
     log_size = screen_dims.w - @width_of_layout_items
     {{y, m, d}, {h, min, s, _}} = entry.timestamp
     timestamp = NaiveDateTime.from_erl!({{y, m, d}, {h, min, s}}) |> NaiveDateTime.to_string()
@@ -165,18 +163,17 @@ defmodule RingLogger.Viewer do
         "~-3ts | ~ts#{IO.ANSI.reset()} | ~-12ts | ~-#{log_size}ts | ~-20ts~n",
         [
           to_string(index),
-          Atom.to_string(entry.level),
+          format_level(entry.level),
           entry.metadata[:application],
           entry.message |> String.trim() |> String.replace("\n", " "),
           timestamp
         ]
       )
     ]
-    |> IO.write()
   end
 
-  defp reset_screen(_screen_dims) do
-    [IO.ANSI.clear(), IO.ANSI.cursor(0, 0)] |> IO.write()
+  defp reset_screen() do
+    [IO.ANSI.clear(), IO.ANSI.cursor(0, 0)]
   end
 
   #### Log Filtering / Pagination Functions
@@ -245,7 +242,7 @@ defmodule RingLogger.Viewer do
     new_state =
       if Integer.parse(cmd_string) != :error do
         {index, _rest} = Integer.parse(cmd_string)
-        _ = inspect_entry(index, state, current_logs)
+        inspect_entry(index, state, current_logs)
         state
       else
         first_char = String.at(cmd_string, 0) |> String.downcase()
@@ -321,22 +318,21 @@ defmodule RingLogger.Viewer do
     _ -> state
   end
 
-  defp inspect_entry(index, state, current_logs) do
+  defp inspect_entry(index, _state, current_logs) do
     if index <= length(current_logs) do
       selected = Enum.at(current_logs, index)
-      reset_screen(state.screen_dims)
 
       IO.puts([
+        reset_screen(),
         "\n----------Log Inspect----------\n",
         "\n#{inspect(selected[:metadata], pretty: true)}\n",
         "\n----------\n",
-        get_color(selected.level),
         selected.message,
-        IO.ANSI.reset(),
         "\n----------\n"
       ])
 
-      _ = IO.gets("Press Enter To Close...")
+      _ = IO.gets("Press enter to close...")
+      :ok
     end
   end
 
@@ -399,9 +395,8 @@ defmodule RingLogger.Viewer do
   end
 
   defp show_help(state) do
-    reset_screen(state.screen_dims)
-
     IO.puts([
+      reset_screen(),
       "\n----------Log Viewer Help----------\n",
       "Commands:\n",
       "\t(n)ext - navigate to the next page of the log buffer.\n",
@@ -418,19 +413,20 @@ defmodule RingLogger.Viewer do
       "\n----------\n"
     ])
 
-    _ = IO.gets("Press Enter To Close...")
+    _ = IO.gets("Press enter to close...")
+    state
   end
 
   #### Misc Util Functions
 
-  defp get_color(:emergency), do: IO.ANSI.white() <> IO.ANSI.red_background()
-  defp get_color(:alert), do: IO.ANSI.white() <> IO.ANSI.red_background()
-  defp get_color(:critical), do: IO.ANSI.white() <> IO.ANSI.red_background()
-  defp get_color(:error), do: IO.ANSI.red()
-  defp get_color(:warn), do: IO.ANSI.yellow()
-  defp get_color(:warning), do: IO.ANSI.yellow()
-  defp get_color(:notice), do: IO.ANSI.light_blue()
-  defp get_color(:info), do: IO.ANSI.light_blue()
-  defp get_color(:debug), do: IO.ANSI.cyan()
-  defp get_color(_), do: IO.ANSI.white()
+  defp format_level(:emergency), do: [IO.ANSI.white(), IO.ANSI.red_background(), "emerg"]
+  defp format_level(:alert), do: [IO.ANSI.white(), IO.ANSI.red_background(), "alert"]
+  defp format_level(:critical), do: [IO.ANSI.white(), IO.ANSI.red_background(), "crit "]
+  defp format_level(:error), do: [IO.ANSI.red(), "error"]
+  defp format_level(:warn), do: [IO.ANSI.yellow(), "warn "]
+  defp format_level(:warning), do: [IO.ANSI.yellow(), "warn "]
+  defp format_level(:notice), do: [IO.ANSI.light_blue(), "notic"]
+  defp format_level(:info), do: [IO.ANSI.light_blue(), "info "]
+  defp format_level(:debug), do: [IO.ANSI.cyan(), "debug"]
+  defp format_level(_), do: [IO.ANSI.white(), "?    "]
 end
