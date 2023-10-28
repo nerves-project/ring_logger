@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.11.0
+
+* New features
+  * Add small TUI. Run `RingLogger.viewer` and type `h` for help to try it out.
+    Thanks to @doawoo for this feature.
+
 ## v0.10.5
 
 * Fixes
