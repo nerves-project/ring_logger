@@ -83,20 +83,25 @@ Logger.configure_backend(RingLogger, max_size: 1024)
 See the example project for a hands-on walk-through of using the logger. Read on
 for the highlights.
 
-Log messages aren't printed to the console by default. If you're seeing them,
-they may be coming from Elixir's default `:console` logger.
+For the purpose of the example, when you're in IEx, log messages shouldn't be
+printed to the console by default. They'll be coming from the console logger, so
+turn them off:
 
-To see log messages as they come in, call `RingLogger.attach()` and then to make
-the log messages stop, call `RingLogger.detach()`. The `attach` method takes
-options if you want to limit the log level, change the formatting, etc.
+```elixir
+iex> Logger.remove_backend(:console)
+:ok
+```
+
+To see log messages as they come in with RingLogger, call `RingLogger.attach()`
+and then to make the log messages stop, call `RingLogger.detach()`. The `attach`
+method takes options if you want to limit the log level, change the formatting,
+etc.
 
 Here's an example:
 
 ```elixir
 iex> Logger.add_backend(RingLogger)
 {:ok, #PID<0.199.0>}
-iex> Logger.remove_backend(:console)
-:ok
 iex> RingLogger.attach
 :ok
 iex> require Logger
@@ -106,11 +111,8 @@ iex> Logger.info("hello")
 14:04:52.516 [info]  hello
 ```
 
-This probably isn't too exciting until you see that it works on remote shells as
-well (the `:console` logger doesn't do this).
-
-Say you prefer polling for log messages rather than having them print over your
-console at random times. If you're still attached, then `detach` and `next`:
+If you prefer polling for log messages rather than having them print when they
+show up. If you're still attached, then `detach` and `next`:
 
 ```elixir
 iex> RingLogger.detach
@@ -151,6 +153,17 @@ iex> RingLogger.grep(~r/[Nn]eedle/)
 
 16:55:41.614 [info]  Needle in a haystack
 ```
+
+## RingLogger TUI
+
+RingLogger provides a simple text UI that lets you access log viewing features
+in a friendly way.
+
+```elixir
+iex> RingLogger.viewer()
+```
+
+Type `h` and then enter for help.
 
 ## Module and Application Level Filtering
 
