@@ -108,8 +108,7 @@ defmodule RingLogger.Viewer do
   end
 
   defp compute_prompt(state) do
-    per_page = state.screen_dims.h - (@header_lines + @footer_lines)
-    prefix = "[#{state.current_page}/#{div(length(state.raw_logs), per_page)}] "
+    prefix = "[#{state.current_page}/#{total_pages(state)}] "
 
     level_suffix =
       if state.lowest_log_level != nil do
@@ -202,7 +201,7 @@ defmodule RingLogger.Viewer do
   end
 
   defp paginate_logs(entries, state) do
-    per_page = state.screen_dims.h - (@header_lines + @footer_lines)
+    per_page = per_page(state)
     current_index = state.current_page * per_page
 
     Enum.slice(entries, current_index..(current_index + per_page))
@@ -249,7 +248,11 @@ defmodule RingLogger.Viewer do
         command(first_char, cmd_string, state)
       end
 
-    %{new_state | last_cmd_string: cmd_string}
+    %{
+      new_state
+      | last_cmd_string: cmd_string,
+        current_page: clamp_page(new_state.current_page, total_pages(new_state))
+    }
   end
 
   defp command(cmd_exit, _cmd_string, state) when cmd_exit in ["e", "q"] do
@@ -294,6 +297,13 @@ defmodule RingLogger.Viewer do
 
   defp command(_, _cmd_string, state), do: state
 
+  defp clamp_page(v, max) when v > max, do: max
+  defp clamp_page(v, _) when v < 0, do: 0
+  defp clamp_page(v, _), do: v
+
+  defp per_page(state), do: max(1, state.screen_dims.h - (@header_lines + @footer_lines))
+  defp total_pages(state), do: div(length(state.raw_logs), per_page(state))
+
   defp next_page(%{current_page: n} = state), do: %{state | current_page: n + 1}
   defp prev_page(%{current_page: 0} = state), do: %{state | current_page: 0}
   defp prev_page(%{current_page: n} = state), do: %{state | current_page: n - 1}
@@ -303,8 +313,7 @@ defmodule RingLogger.Viewer do
 
     case length(split) do
       1 ->
-        per_page = state.screen_dims.h - (@header_lines + @footer_lines)
-        last_page = div(length(state.raw_logs), per_page)
+        last_page = total_pages(state)
         %{state | current_page: last_page}
 
       2 ->
