@@ -187,11 +187,7 @@ defmodule RingLogger.Viewer do
       else
         raw = RingLogger.get()
 
-        boot_index =
-          Enum.reverse(raw)
-          |> Enum.find_index(fn entry ->
-            String.contains?(entry.message, "Booting Linux")
-          end)
+        boot_index = find_starting_index(raw)
 
         # Index needs to be negative because we searched from the end of the list
         {_, split_segment} = Enum.split(raw, -boot_index)
@@ -199,6 +195,20 @@ defmodule RingLogger.Viewer do
       end
 
     %{state | raw_logs: entries |> apply_log_filters(state)}
+  end
+
+  defp find_starting_index(entries) do
+    index =
+      Enum.reverse(entries)
+      |> Enum.find_index(fn entry ->
+        String.contains?(entry.message, "Linux version ")
+      end)
+
+    if index do
+      index + 1
+    else
+      0
+    end
   end
 
   defp paginate_logs(entries, state) do
