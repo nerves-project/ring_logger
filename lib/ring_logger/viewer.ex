@@ -15,7 +15,7 @@ defmodule RingLogger.Viewer do
 
   @headers ["#", "Level", "Application", "Message", "Timestamp"]
   @header_lines 2
-  @footer_lines 2
+  @footer_lines 1
   @width_of_layout_items 53
   @min_log_width 30
   @min_log_entries 10
@@ -28,6 +28,8 @@ defmodule RingLogger.Viewer do
     running: true,
     last_cmd_string: nil,
     current_page: 0,
+    last_page: 0,
+    per_page: 0,
     screen_dims: %{w: 0, h: 0},
     lowest_log_level: nil,
     before_boot: true,
@@ -52,22 +54,18 @@ defmodule RingLogger.Viewer do
 
     IO.puts("Starting RingLogger Viewer...")
 
-    starting_state = @init_state |> get_log_snapshot()
-
-    draw(starting_state)
-
-    :ok
+    @init_state |> get_log_snapshot() |> loop()
   end
 
   #### Drawing and IO Functions
+  defp loop(%{running: false} = _state) do
+    :ok
+  end
 
-  defp draw(state) do
+  defp loop(state) do
     screen_dims = get_screen_dims()
-    new_state = %{state | screen_dims: screen_dims} |> do_draw()
 
-    if new_state.running do
-      draw(new_state)
-    end
+    state |> update_dimensions(screen_dims) |> do_draw() |> loop()
   end
 
   defp get_screen_dims() do
@@ -77,10 +75,34 @@ defmodule RingLogger.Viewer do
     %{w: cols, h: rows}
   end
 
+  defp update_dimensions(%{screen_dims: screen_dims} = state, screen_dims) do
+    # No changes
+    state
+  end
+
+  defp update_dimensions(state, screen_dims) do
+    %{state | screen_dims: screen_dims} |> recalculate_pagination()
+  end
+
+  defp recalculate_pagination(state) do
+    index = state.per_page * state.current_page
+
+    per_page = state.screen_dims.h - (@header_lines + @footer_lines)
+    page_count = ceil(length(state.raw_logs) / per_page)
+    last_page = page_count - 1
+
+    current_page = div(index, per_page)
+
+    %{
+      state
+      | per_page: per_page,
+        current_page: current_page,
+        last_page: last_page
+    }
+  end
+
   defp do_draw(state) do
-    filtered_logs =
-      state.raw_logs
-      |> paginate_logs(state)
+    filtered_logs = current_page(state)
 
     [
       reset_screen(),
@@ -108,8 +130,7 @@ defmodule RingLogger.Viewer do
   end
 
   defp compute_prompt(state) do
-    per_page = state.screen_dims.h - (@header_lines + @footer_lines)
-    prefix = "[#{state.current_page}/#{div(length(state.raw_logs), per_page)}] "
+    prefix = "[#{state.current_page}/#{state.last_page}] "
 
     level_suffix =
       if state.lowest_log_level != nil do
@@ -194,7 +215,7 @@ defmodule RingLogger.Viewer do
         split_segment
       end
 
-    %{state | raw_logs: entries |> apply_log_filters(state)}
+    %{state | raw_logs: entries |> apply_log_filters(state)} |> recalculate_pagination()
   end
 
   defp find_starting_index(entries) do
@@ -211,11 +232,11 @@ defmodule RingLogger.Viewer do
     end
   end
 
-  defp paginate_logs(entries, state) do
-    per_page = state.screen_dims.h - (@header_lines + @footer_lines)
-    current_index = state.current_page * per_page
+  defp current_page(state) do
+    page_first_index = state.current_page * state.per_page
+    page_last_index = page_first_index + state.per_page - 1
 
-    Enum.slice(entries, current_index..(current_index + per_page))
+    Enum.slice(state.raw_logs, page_first_index..page_last_index)
   end
 
   defp apply_log_filters(entries, state) do
@@ -287,7 +308,7 @@ defmodule RingLogger.Viewer do
   end
 
   defp command("b", _cmd_string, state) do
-    %{state | before_boot: !state.before_boot} |> get_log_snapshot()
+    %{state | before_boot: !state.before_boot, current_page: 0} |> get_log_snapshot()
   end
 
   defp command("l", cmd_string, state) do
@@ -304,22 +325,19 @@ defmodule RingLogger.Viewer do
 
   defp command(_, _cmd_string, state), do: state
 
+  defp next_page(%{current_page: p, last_page: p} = state), do: state
   defp next_page(%{current_page: n} = state), do: %{state | current_page: n + 1}
-  defp prev_page(%{current_page: 0} = state), do: %{state | current_page: 0}
+  defp prev_page(%{current_page: 0} = state), do: state
   defp prev_page(%{current_page: n} = state), do: %{state | current_page: n - 1}
 
   defp jump_to_page(cmd_string, state) do
-    split = String.split(cmd_string)
+    case String.split(cmd_string) do
+      [_] ->
+        %{state | current_page: state.last_page}
 
-    case length(split) do
-      1 ->
-        per_page = state.screen_dims.h - (@header_lines + @footer_lines)
-        last_page = div(length(state.raw_logs), per_page)
-        %{state | current_page: last_page}
-
-      2 ->
-        {page, _} = Integer.parse(Enum.at(split, 1))
-        %{state | current_page: max(0, page)}
+      [_, page_string] ->
+        {page, _} = Integer.parse(page_string)
+        %{state | current_page: min(max(0, page), state.last_page)}
 
       _ ->
         state
@@ -347,41 +365,40 @@ defmodule RingLogger.Viewer do
   end
 
   defp set_log_level(cmd_string, state) do
-    split = String.split(cmd_string)
-
-    cond do
-      length(split) <= 1 ->
+    case {String.split(cmd_string), state.lowest_log_level} do
+      {[_cmd], previous} when previous != nil ->
         # No args, clear the log level filter
-        %{state | lowest_log_level: nil}
+        %{state | lowest_log_level: nil, current_page: 0}
 
-      length(split) == 2 and Enum.at(split, 1) in @level_strings ->
+      {[_cmd, new_level], level} when new_level != level and new_level in @level_strings ->
         # 2 args, 2nd arg is a valid log level string
-        level_str = Enum.at(split, 1)
-        level_atom = String.to_existing_atom(level_str)
-        %{state | lowest_log_level: level_atom}
+        level_atom = String.to_existing_atom(new_level)
+        %{state | lowest_log_level: level_atom, current_page: 0}
 
-      true ->
+      _ ->
         state
     end
   end
 
   defp add_remove_app(cmd_string, state) do
-    split = String.split(cmd_string)
+    case String.split(cmd_string) do
+      [_cmd] ->
+        %{state | applications_filter: [], current_page: 0}
 
-    cond do
-      length(split) == 1 ->
-        %{state | applications_filter: []}
-
-      length(split) == 2 ->
-        app_atom = String.to_existing_atom(Enum.at(split, 1))
+      [_cmd, app_str] ->
+        app_atom = String.to_existing_atom(app_str)
 
         if app_atom in state.applications_filter do
-          %{state | applications_filter: List.delete(state.applications_filter, app_atom)}
+          %{
+            state
+            | applications_filter: List.delete(state.applications_filter, app_atom),
+              current_page: 0
+          }
         else
-          %{state | applications_filter: [app_atom | state.applications_filter]}
+          %{state | applications_filter: [app_atom | state.applications_filter], current_page: 0}
         end
 
-      true ->
+      _ ->
         state
     end
   rescue
@@ -393,7 +410,7 @@ defmodule RingLogger.Viewer do
 
     case Regex.compile(str) do
       {:ok, expression} ->
-        %{state | grep_filter: expression}
+        %{state | grep_filter: expression, current_page: 0}
 
       _ ->
         state
@@ -401,7 +418,7 @@ defmodule RingLogger.Viewer do
   rescue
     # We can't force String.split/2 with parts = 2 to not raise if they only provide 1 arg
     # So treat this as the reset condition
-    _ -> %{state | grep_filter: nil}
+    _ -> %{state | grep_filter: nil, current_page: 0}
   end
 
   defp show_help(state) do
