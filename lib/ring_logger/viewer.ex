@@ -13,7 +13,7 @@ defmodule RingLogger.Viewer do
   Type `exit` or `e` to exit the viewer.
   """
 
-  @headers ["#", "Level", "Application", "Message", "Time"]
+  @headers ["#", "Level", "Application", "Message", "Timestamp"]
   @header_lines 2
   @footer_lines 2
   @width_of_layout_items 53
