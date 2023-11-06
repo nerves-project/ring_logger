@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.11.1
+
+* Fixes
+  * Fix minor pagination issues with viewer
+  * Adjust boot start search string to work with more Nerves systems
+
 ## v0.11.0
 
 * New features
