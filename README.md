@@ -159,6 +159,8 @@ iex> RingLogger.grep(~r/[Nn]eedle/)
 RingLogger provides a simple text UI that lets you access log viewing features
 in a friendly way.
 
+[![asciicast](https://asciinema.org/a/620485.svg)](https://asciinema.org/a/620485)
+
 ```elixir
 iex> RingLogger.viewer()
 ```
