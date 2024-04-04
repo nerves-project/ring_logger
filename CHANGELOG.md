@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.11.2
+
+* Fixes
+  * Don't crash when logging corrupt data. This is not common, but can caused
+    when logging output from system commands.
+
 ## v0.11.1
 
 * Fixes
