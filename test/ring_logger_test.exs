@@ -555,6 +555,31 @@ defmodule RingLoggerTest do
     assert message =~ "[info] Cześć!"
   end
 
+  test "logging corrupt data", %{io: io} do
+    # This is non-Unicode and shouldn't crash RingLogger. There are slightly
+    # different paths that are taken for iodata vs binary data, so make sure
+    # they behave identically.
+    message_string = <<227, 97, 195, 253, 123, 50, 91, 116, 114, 227, 110>>
+    message = [message_string]
+
+    :ok = RingLogger.attach(io: io)
+    Logger.debug(message_string)
+    assert_receive {:io, message_string_result}
+
+    Logger.debug(message)
+    assert_receive {:io, message_result}
+
+    assert message_result == message_string_result
+    assert message_result =~ "{2[tr"
+  end
+
+  test "logging totally wrong data doesn't crash", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+    Logger.info([[{1, 2, 3}]])
+    assert_receive {:io, message}
+    assert message =~ "[info] cannot truncate chardata"
+  end
+
   describe "fetching config" do
     test "can retrieve config for attached client", %{io: io} do
       :ok = RingLogger.attach(io: io)

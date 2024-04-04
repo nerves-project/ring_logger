@@ -328,6 +328,22 @@ defmodule RingLogger do
   end
 
   defp flatten({mod, msg, ts, md}) do
-    {mod, IO.chardata_to_string(msg), ts, md}
+    {mod, safe_chardata_to_string(msg), ts, md}
+  end
+
+  defp safe_chardata_to_string(msg) do
+    IO.chardata_to_string(msg)
+  rescue
+    UnicodeConversionError ->
+      # ASCII?
+      safe_iodata_to_binary(msg)
+  end
+
+  defp safe_iodata_to_binary(msg) do
+    IO.iodata_to_binary(msg)
+  rescue
+    ArgumentError ->
+      # Give up
+      inspect(msg)
   end
 end
