@@ -17,7 +17,7 @@ defmodule RingLogger.Viewer do
   @header_lines 2
   @footer_lines 1
   @width_of_layout_items 53
-  @min_log_width 30
+  @min_log_width 25
   @min_log_entries 10
 
   @min_height @header_lines + @footer_lines + @min_log_entries
