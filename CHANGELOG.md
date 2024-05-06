@@ -2,6 +2,12 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.11.3
+
+* Fixes
+  * Set the minimum log viewer line width to 25 so that the viewer works when
+    the terminal forgets how wide it is
+
 ## v0.11.2
 
 * Fixes
