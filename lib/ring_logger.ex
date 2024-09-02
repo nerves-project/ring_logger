@@ -5,7 +5,7 @@ defmodule RingLogger do
   Install it by adding it to your `config.exs`:
 
   ```elixir
-  use Mix.Config
+  import Config
 
   # Add the RingLogger backend. This removes the default :console backend.
   config :logger, backends: [RingLogger]
