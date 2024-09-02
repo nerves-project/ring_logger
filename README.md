@@ -30,7 +30,7 @@ Add `ring_logger` to your projects dependencies in your `mix.exs`:
 Then configure the logger in your `config/config.exs`:
 
 ```elixir
-use Mix.Config
+import Config
 
 # Add the RingLogger backend. This removes the default :console backend.
 config :logger, backends: [RingLogger]
