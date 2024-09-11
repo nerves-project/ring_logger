@@ -208,10 +208,10 @@ defmodule RingLogger.Server do
     {:noreply, detach_client(pid, state)}
   end
 
-  def handle_info(:tick, state = %__MODULE__{persist_path: path}) when is_binary(path) do
-    Process.send_after(self(), :tick, state.persist_seconds * 1000)
+  def handle_info(:tick, state = %__MODULE__{persist_path: path, persist_seconds: seconds}) when is_binary(path) do
+    Process.send_after(self(), :tick, seconds * 1000)
 
-    case Persistence.save(state.persist_path, merge_buffers(state)) do
+    case Persistence.save(path, merge_buffers(state)) do
       :ok ->
         {:noreply, state}
 
@@ -222,13 +222,13 @@ defmodule RingLogger.Server do
     end
   end
 
-  def handle_info(:tick, state = %__MODULE__{persist_path: path}) do
+  def handle_info(:tick, _state = %__MODULE__{persist_path: path}) do
     Logger.warning("RingLogger attempt to persisting log when the path (#{path}) is invalid")
   end
 
   @impl GenServer
   def terminate(_reason, state = %__MODULE__{persist_path: path}) when is_binary(path) do
-    Persistence.save(state.persist_path, merge_buffers(state))
+    Persistence.save(path, merge_buffers(state))
     close_all_clients(state)
     :ok
   end
