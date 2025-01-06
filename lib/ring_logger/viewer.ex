@@ -40,8 +40,8 @@ defmodule RingLogger.Viewer do
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
-  @spec view() :: :ok
-  def view() do
+  @spec view(String.t()) :: :ok
+  def view(cmd_string \\ "") do
     screen_dims = get_screen_dims()
 
     if screen_dims.w <= @min_width do
@@ -54,7 +54,34 @@ defmodule RingLogger.Viewer do
 
     IO.puts("Starting RingLogger Viewer...")
 
-    @init_state |> get_log_snapshot() |> loop()
+    if String.equivalent?(cmd_string, "") do
+      @init_state |> get_log_snapshot() |> loop()
+    else
+      parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
+    end
+  end
+
+  defp parse_launch_cmd(cmd_string, state) do
+    cmd_list = String.split(cmd_string, ";")
+
+    state =
+      Enum.reduce(cmd_list, state, fn cmd, state ->
+        cmd_char = String.trim_leading(cmd, " ") |> String.at(0) |> String.downcase()
+        apply_command_parser(cmd_char, cmd, state)
+      end)
+
+    %{state | current_page: 0}
+  end
+
+  defp apply_command_parser(cmd_char, cmd, state) do
+    case {cmd_char, cmd, state} do
+      {"l", cmd, state} -> set_log_level(cmd, state)
+      {"a", cmd, state} -> add_remove_app(cmd, state)
+      {"r", _cmd, _state} -> %{@init_state | current_page: 0}
+      {"g", cmd, state} -> add_remove_grep(cmd, state)
+      {"q", _cmd, state} -> %{state | running: false}
+      _ -> state
+    end
   end
 
   #### Drawing and IO Functions
@@ -397,6 +424,12 @@ defmodule RingLogger.Viewer do
         else
           %{state | applications_filter: [app_atom | state.applications_filter], current_page: 0}
         end
+
+      # accept the series of applications if entered by user and convert them to atoms list
+      [_cmd | app_strings] ->
+        app_atom = Enum.map(app_strings, &String.to_existing_atom/1)
+
+        %{state | applications_filter: app_atom, current_page: 0}
 
       _ ->
         state
