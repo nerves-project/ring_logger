@@ -40,8 +40,8 @@ defmodule RingLogger.Viewer do
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
-  @spec view() :: :ok
-  def view() do
+  @spec view(String.t()) :: :ok
+  def view(cmd_string \\ "") do
     screen_dims = get_screen_dims()
 
     if screen_dims.w <= @min_width do
@@ -54,7 +54,34 @@ defmodule RingLogger.Viewer do
 
     IO.puts("Starting RingLogger Viewer...")
 
-    @init_state |> get_log_snapshot() |> loop()
+    if String.equivalent?(cmd_string, "") do
+      @init_state |> get_log_snapshot() |> loop()
+    else
+      parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
+    end
+  end
+
+  defp parse_launch_cmd(cmd_string, state) do
+    cmd_list = String.split(cmd_string, ";")
+
+    state =
+      Enum.reduce(cmd_list, state, fn cmd, state ->
+        cmd_char = String.trim_leading(cmd, " ") |> String.at(0) |> String.downcase()
+        apply_command_parser(cmd_char, cmd, state)
+      end)
+
+    %{state | current_page: 0}
+  end
+
+  defp apply_command_parser(cmd_char, cmd, state) do
+    case {cmd_char, cmd, state} do
+      {"l", cmd, state} -> set_log_level(cmd, state)
+      {"d", cmd, state} -> add_time_log(cmd, state)
+      {"r", _cmd, _state} -> %{@init_state | current_page: 0}
+      {"g", cmd, state} -> add_remove_grep(cmd, state)
+      {"q", _cmd, state} -> %{state | running: false}
+      _ -> state
+    end
   end
 
   #### Drawing and IO Functions
@@ -130,7 +157,13 @@ defmodule RingLogger.Viewer do
   end
 
   defp compute_prompt(state) do
-    prefix = "[#{state.current_page}/#{state.last_page}] "
+    prefix =
+      if state.applications_filter[:start_time] == nil do
+        "[#{state.current_page}/#{state.last_page}] "
+      else
+        {:ok, dt} = DateTime.from_unix(div(state.applications_filter[:start_time], 1_000_000))
+        "[#{state.current_page}(#{dt})/#{state.last_page}] "
+      end
 
     level_suffix =
       if state.lowest_log_level != nil do
@@ -138,7 +171,7 @@ defmodule RingLogger.Viewer do
       end
 
     app_suffix =
-      if state.applications_filter != [] do
+      if state.applications_filter != [] and state.applications_filter[:start_time] == nil do
         inspect(state.applications_filter)
       end
 
@@ -241,15 +274,19 @@ defmodule RingLogger.Viewer do
 
   defp apply_log_filters(entries, state) do
     Enum.filter(entries, fn entry ->
-      maybe_apply_app_filter?(state, entry) and maybe_apply_level_filter?(state, entry) and
+      maybe_apply_app_or_time_filter?(state, entry) and maybe_apply_level_filter?(state, entry) and
         maybe_apply_grep_filter?(state, entry)
     end)
   end
 
-  defp maybe_apply_app_filter?(%{applications_filter: []}, _entry), do: true
+  defp maybe_apply_app_or_time_filter?(%{applications_filter: []}, _entry), do: true
 
-  defp maybe_apply_app_filter?(%{applications_filter: app_list}, entry),
-    do: entry.metadata[:application] in app_list
+  defp maybe_apply_app_or_time_filter?(%{applications_filter: app_list} = state, entry) do
+    case app_list[:start_time] do
+      nil -> entry.metadata[:application] in app_list
+      _ -> check_date_range(state, entry)
+    end
+  end
 
   defp maybe_apply_level_filter?(%{lowest_log_level: nil}, _entry), do: true
 
@@ -260,6 +297,11 @@ defmodule RingLogger.Viewer do
 
   defp maybe_apply_grep_filter?(%{grep_filter: expression}, entry),
     do: Regex.match?(expression, entry.message)
+
+  defp check_date_range(state, entry) do
+    entry.metadata[:time] >= state.applications_filter[:start_time] &&
+      entry.metadata[:time] <= state.applications_filter[:end_time]
+  end
 
   #### Command Handler Functions
 
@@ -317,6 +359,10 @@ defmodule RingLogger.Viewer do
 
   defp command("a", cmd_string, state) do
     add_remove_app(cmd_string, state) |> get_log_snapshot()
+  end
+
+  defp command("d", cmd_string, state) do
+    add_time_log(cmd_string, state) |> get_log_snapshot()
   end
 
   defp command("g", cmd_string, state) do
@@ -405,6 +451,30 @@ defmodule RingLogger.Viewer do
     _ -> state
   end
 
+  defp add_time_log(cmd_string, state) do
+    case String.split(cmd_string) do
+      [_cmd, date, time] ->
+        coupled = date <> "T" <> time <> "Z"
+
+        {:ok, dt, _offset} = DateTime.from_iso8601(coupled)
+
+        # we recieve time in ringlogger micro secs so to imporve precision we have multiplied secs with micro secs order
+        dt_start_micro_secs = DateTime.to_unix(dt) * 1_000_000
+        dt_end_micro_secs = DateTime.to_unix(dt) * 1_000_000 + 1_000_000
+
+        %{
+          state
+          | applications_filter: [start_time: dt_start_micro_secs, end_time: dt_end_micro_secs],
+            current_page: 0
+        }
+
+      _ ->
+        state
+    end
+  rescue
+    _ -> state
+  end
+
   defp add_remove_grep(cmd_string, state) do
     [_, str] = String.split(cmd_string, " ", parts: 2, trim: true)
 
@@ -434,6 +504,7 @@ defmodule RingLogger.Viewer do
       "\t(g)rep [regex/string] - regex/string search expression, leaving argument blank clears filter.\n",
       "\t(l)evel [log_level] - filter to specified level (or higher), leaving level blank clears the filter.\n",
       "\t(a)pp [atom] - adds/remove an atom from the 'application' metadata filter, leaving argument blank clears filter.\n",
+      "\t(d)ate (goto date)command - d 2024-12-25 10:20:01 \n",
       "\t0..n - input any table index number to fully inspect a log line, and view its metadata.\n",
       "\t(e)xit or (q)uit - closes the log viewer.\n",
       "\t(h)elp / ? - show this screen.\n",

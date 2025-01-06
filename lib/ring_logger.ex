@@ -196,8 +196,14 @@ defmodule RingLogger do
   @doc """
   Starts the Ring Logger Viewer TUI app on the current prompt
   """
+  @spec viewer(String.t()) :: :ok
+  def viewer(cmd_string), do: RingLogger.Viewer.view(cmd_string)
+
+  @doc """
+  Starts the Ring Logger Viewer TUI app on the current prompt and passes empty string
+  """
   @spec viewer() :: :ok
-  def viewer(), do: RingLogger.Viewer.view()
+  def viewer(), do: RingLogger.Viewer.view("")
 
   @doc """
   Reset the index into the log for `next/1` to the oldest entry.
