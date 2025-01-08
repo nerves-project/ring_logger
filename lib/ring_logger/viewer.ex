@@ -59,6 +59,7 @@ defmodule RingLogger.Viewer do
     end
   end
 
+  # parse_launch_cmd/2 returns updated state by applying multiple filters to initial state
   defp parse_launch_cmd(cmd_string, state) do
     cmd_list = String.split(cmd_string, ";")
 
@@ -71,6 +72,7 @@ defmodule RingLogger.Viewer do
     %{state | current_page: 0}
   end
 
+  # apply_command_parser/3 returns state by applying single filter
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
       {"l", cmd, state} -> set_log_level(cmd, state)
