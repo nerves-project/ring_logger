@@ -32,15 +32,15 @@ defmodule RingLogger.ViewerTest do
   test "goto date command with Invalid arguments using Ringlogger.view/1 command", %{
     state: _state
   } do
-    Logger.debug("blofeld debug level sample msg",
-      application: :blofeld_firmware,
+    Logger.debug("Ringlogger debug level sample msg",
+      application: :Ringlogger_firmware,
       time: 1_735_160_108_000_011
     )
 
-    Logger.warning("blofeld warn level sample msg", application: :telit_modem)
-    Logger.info("blofeld info level sample msg", application: :peridiod)
-    Logger.critical("blofeld critical level sample msg", application: nil)
-    Logger.emergency("blofeld emergency level sample msg", application: :Vintage_Net)
+    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
+    Logger.info("Ringlogger info level sample msg", application: :peridiod)
+    Logger.critical("Ringlogger critical level sample msg", application: nil)
+    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
 
     Logger.info("---------enter q to exit out of given test-----",
       application: :User,
@@ -51,15 +51,15 @@ defmodule RingLogger.ViewerTest do
   end
 
   test "goto date command with valid arguments using Ringlogger.view/1 command", %{state: _state} do
-    Logger.debug("blofeld debug level sample msg",
-      application: :blofeld_firmware,
+    Logger.debug("Ringlogger debug level sample msg",
+      application: :Ringlogger_firmware,
       time: 1_735_160_108_000_011
     )
 
-    Logger.warning("blofeld warn level sample msg", application: :telit_modem)
-    Logger.info("blofeld info level sample msg", application: :peridiod)
-    Logger.critical("blofeld critical level sample msg", application: nil)
-    Logger.emergency("blofeld emergency level sample msg", application: :Vintage_Net)
+    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
+    Logger.info("Ringlogger info level sample msg", application: :peridiod)
+    Logger.critical("Ringlogger critical level sample msg", application: nil)
+    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
 
     Logger.info("---------enter q to exit out of given test-----",
       application: :User,
