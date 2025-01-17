@@ -52,15 +52,13 @@ defmodule RingLogger.Viewer do
       raise "Sorry, your terminal needs to be at least #{@min_height} rows high to use this tool!"
     end
 
-    if String.equivalent?(cmd_string, "") do
-      @init_state |> get_log_snapshot() |> loop()
-    else
-      parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
-    end
+    parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
   end
 
+  def parse_launch_cmd("", state), do: state
+
   # parse_launch_cmd/2 returns updated state by applying multiple filters to initial state
-  defp parse_launch_cmd(cmd_string, state) do
+  def parse_launch_cmd(cmd_string, state) do
     cmd_list = String.split(cmd_string, ";")
 
     state =
@@ -517,9 +515,9 @@ defmodule RingLogger.Viewer do
       "\t(g)rep [regex/string] - regex/string search expression, leaving argument blank clears filter.\n",
       "\t(l)evel [log_level] - filter to specified level (or higher), leaving level blank clears the filter.\n",
       "\t(a)pp [atom] - adds/remove an atom from the 'application' metadata filter, leaving argument blank clears filter.\n",
-      "\t(a)pp [atom] [atom] [atom] - adds/remove an multiple atoms from the 'application' metadata filter, leaving argument blank clears filter.\n",
-      "\t(;)concat commands [example usage] - a telit_modem; d 2024-12-25 10:20:01 \n",
+      "\t(a)pp [atom] [atom] [atom] - adds/remove an multiple atoms from the 'application' metadata filter.Same as multiple uses of a [atom]\n",
       "\t(d)ate (goto date)command - d 2024-12-25 10:20:01 \n",
+      "\t(;)concat commands [example usage] - a telit_modem; d 2024-12-25 10:20:01 \n",
       "\t0..n - input any table index number to fully inspect a log line, and view its metadata.\n",
       "\t(e)xit or (q)uit - closes the log viewer.\n",
       "\t(h)elp / ? - show this screen.\n",
