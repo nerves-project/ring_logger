@@ -1,9 +1,31 @@
 defmodule RingLogger.ViewerTest do
+  @moduledoc """
+  Ringlogger.Viewer Module contains all private functions except view() and newly created function parse_launch_command.
+  Thus test cases tries to showcase the updated state of the Ringlogger.Viewer module only not the visual implementation of the same.
+  """
+
   use ExUnit.Case, async: false
 
   require Logger
 
+  alias RingLogger.Viewer
+
   @default_pattern "\n$time $metadata[$level] $message\n"
+
+  @init_state %{
+    current_screen: :list,
+    running: true,
+    last_cmd_string: nil,
+    current_page: 0,
+    last_page: 0,
+    per_page: 0,
+    screen_dims: %{w: 0, h: 0},
+    lowest_log_level: nil,
+    before_boot: true,
+    grep_filter: nil,
+    applications_filter: [],
+    raw_logs: []
+  }
 
   setup do
     Logger.remove_backend(:console)
@@ -29,93 +51,42 @@ defmodule RingLogger.ViewerTest do
     {:ok, %{state: nil}}
   end
 
-  test "Ringlogger.view/1 with multiple commands ; separated", %{state: _state} do
-    Logger.debug("Ringlogger debug level sample msg", application: :Ringlogger_firmware)
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-    Logger.debug("---------enter q to exit out of given test-----", application: :User)
-
-    assert :ok = RingLogger.Viewer.view("a telit_modem;l debug; q")
+  test "Viewer.parse_launch_cmd/2 with multiple commands ; separated" do
+    cmd_string = "a telit_modem; l debug"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+    assert [:telit_modem] == state.applications_filter
+    assert :debug == state.lowest_log_level
   end
 
-  test "Ringlogger.view/1 with invalid command format", %{state: _state} do
-    Logger.debug("Ringlogger debug level sample msg", application: :Ringlogger_firmware)
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-    Logger.info("---------enter q to exit out of given test-----", application: :User)
-
-    # observe in logs you wont find (debug) anywhere writtem at the bottom left corner
-    assert :ok = RingLogger.Viewer.view("r l debug; q")
+  test "Viewer.parse_launch_cmd/2 with invalid format" do
+    cmd_string = "r l debug; a"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+    assert [] == state.applications_filter
   end
 
-
-  test "a command with single application", %{state: _state} do
-    Logger.debug("Ringlogger debug level sample msg", application: :Ringlogger_firmware)
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-    Logger.debug("---------enter q to exit out of given test-----", application: :User)
-
-    assert :ok = RingLogger.Viewer.view("a telit_modem; q")
+  test "a command with single application using parse_launch_cmd/2" do
+    cmd_string = "a blofeld_firmware"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+    assert [:blofeld_firmware] == state.applications_filter
   end
 
-  test "a command with multiple applications", %{state: _state} do
-    Logger.debug("Ringlogger debug level sample msg",
-      application: :Ringlogger_firmware,
-      time: 1_735_140_308_331_070
-    )
-
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-    Logger.info("---------enter q to exit out of given test-----", application: :User)
-
-    assert :ok = RingLogger.Viewer.view("a nil Ringlogger_firmware peridiod; q")
+  test "a command with multiple applications using parse_launch_cmd/2" do
+    cmd_string = "a blofeld_firmware telit_modem nil $kmsg"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+    assert [:blofeld_firmware, :telit_modem, nil, :"$kmsg"] == state.applications_filter
   end
 
- test "goto date command with Invalid arguments using Ringlogger.view/1 command", %{
-    state: _state
-  } do
-    Logger.debug("Ringlogger debug level sample msg",
-      application: :Ringlogger_firmware,
-      time: 1_735_160_108_000_011
-    )
+  test "goto date command with Valid arguments using Viewer.parse_launch_cmd/2 command" do
+    cmd_string = "d 2024-12-25 20:55:08"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
 
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-
-    Logger.info("---------enter q to exit out of given test-----",
-      application: :User,
-      time: 1_735_160_108_000_011
-    )
-
-    assert :ok = RingLogger.Viewer.view("d 2024-1; q")
+    assert [start_time: 1_735_160_108_000_000, end_time: 1_735_160_109_000_000] ==
+             state.applications_filter
   end
 
-  test "goto date command with valid arguments using Ringlogger.view/1 command", %{state: _state} do
-    Logger.debug("Ringlogger debug level sample msg",
-      application: :Ringlogger_firmware,
-      time: 1_735_160_108_000_011
-    )
-
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-
-    Logger.info("---------enter q to exit out of given test-----",
-      application: :User,
-      time: 1_735_160_108_000_011
-    )
-
-    assert :ok = RingLogger.Viewer.view("d 2024-12-25 20:55:08; q")
+  test "goto date command with invalid arguments using Viewer.parse_launch_cmd/2 command" do
+    cmd_string = "d 2024-12-25 8"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+    assert [] == state.applications_filter
   end
 end
