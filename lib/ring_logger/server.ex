@@ -231,7 +231,9 @@ defmodule RingLogger.Server do
   @impl GenServer
   def terminate(_reason, state) do
     if is_binary(state.persist_path) do
-      Persistence.save(state.persist_path, merge_buffers(state))
+      # Best effort save.
+      _ = Persistence.save(state.persist_path, merge_buffers(state))
+      :ok
     end
 
     close_all_clients(state)
