@@ -40,6 +40,8 @@ defmodule RingLogger.Viewer do
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
+  @microsecond_factor 1_000_000
+
   @spec view(String.t()) :: :ok
   def view(cmd_string \\ "") do
     screen_dims = get_screen_dims()
@@ -55,9 +57,11 @@ defmodule RingLogger.Viewer do
     parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
   end
 
+  @doc """
+  updates state by applying multiple filters to initial state or return initial state
+  """
   def parse_launch_cmd("", state), do: state
 
-  # parse_launch_cmd/2 returns updated state by applying multiple filters to initial state
   def parse_launch_cmd(cmd_string, state) do
     cmd_list = String.split(cmd_string, ";")
 
@@ -160,7 +164,7 @@ defmodule RingLogger.Viewer do
       if state.applications_filter[:start_time] == nil do
         "[#{state.current_page}/#{state.last_page}] "
       else
-        {:ok, dt} = DateTime.from_unix(div(state.applications_filter[:start_time], 1_000_000))
+        {:ok, dt} = DateTime.from_unix(div(state.applications_filter[:start_time], @microsecond_factor))
         "[#{state.current_page}(#{dt})/#{state.last_page}] "
       end
 
@@ -439,8 +443,8 @@ defmodule RingLogger.Viewer do
         {:ok, dt, _offset} = DateTime.from_iso8601(coupled)
 
         # we recieve time in ringlogger micro secs so to imporve precision we have multiplied secs with micro secs order
-        dt_start_micro_secs = DateTime.to_unix(dt) * 1_000_000
-        dt_end_micro_secs = DateTime.to_unix(dt) * 1_000_000 + 1_000_000
+        dt_start_micro_secs = DateTime.to_unix(dt) * @microsecond_factor
+        dt_end_micro_secs = DateTime.to_unix(dt) * @microsecond_factor + @microsecond_factor
 
         %{
           state
