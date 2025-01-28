@@ -3,8 +3,10 @@ defmodule RingLogger.PersistenceTest do
 
   alias RingLogger.Persistence
 
+  @persistence_log_name "test/persistence_test.log"
+
   test "saving logs" do
-    File.rm("test/persistence.log")
+    File.rm(@persistence_log_name)
 
     logs = [
       %{
@@ -23,15 +25,15 @@ defmodule RingLogger.PersistenceTest do
       }
     ]
 
-    :ok = Persistence.save("test/persistence.log", logs)
+    :ok = Persistence.save(@persistence_log_name, logs)
 
-    assert File.exists?("test/persistence.log")
+    assert File.exists?(@persistence_log_name)
 
-    File.rm("test/persistence.log")
+    File.rm(@persistence_log_name)
   end
 
   test "loading logs" do
-    File.rm("test/persistence.log")
+    File.rm(@persistence_log_name)
 
     logs = [
       %{
@@ -50,24 +52,24 @@ defmodule RingLogger.PersistenceTest do
       }
     ]
 
-    :ok = Persistence.save("test/persistence.log", logs)
+    :ok = Persistence.save(@persistence_log_name, logs)
 
-    loaded_logs = Persistence.load("test/persistence.log")
+    loaded_logs = Persistence.load(@persistence_log_name)
 
     assert logs == loaded_logs
 
-    File.rm("test/persistence.log")
+    File.rm(@persistence_log_name)
   end
 
   test "file was corrupted" do
-    File.write!("test/persistence.log", "bad file")
+    File.write!(@persistence_log_name, "bad file")
 
-    assert {:error, :corrupted} = Persistence.load("test/persistence.log")
+    assert {:error, :corrupted} = Persistence.load(@persistence_log_name)
 
-    File.rm("test/persistence.log")
+    File.rm(@persistence_log_name)
   end
 
   test "file doesn't exist" do
-    assert {:error, :enoent} = Persistence.load("test/persistence.log")
+    assert {:error, :enoent} = Persistence.load(@persistence_log_name)
   end
 end
