@@ -62,6 +62,7 @@ defmodule RingLogger.Viewer do
   """
   def parse_launch_cmd("", state), do: state
 
+  @spec parse_launch_cmd(String.t(), map()) :: map()
   def parse_launch_cmd(cmd_string, state) do
     cmd_list = String.split(cmd_string, ";")
 
@@ -164,7 +165,9 @@ defmodule RingLogger.Viewer do
       if state.applications_filter[:start_time] == nil do
         "[#{state.current_page}/#{state.last_page}] "
       else
-        {:ok, dt} = DateTime.from_unix(div(state.applications_filter[:start_time], @microsecond_factor))
+        {:ok, dt} =
+          DateTime.from_unix(div(state.applications_filter[:start_time], @microsecond_factor))
+
         "[#{state.current_page}(#{dt})/#{state.last_page}] "
       end
 

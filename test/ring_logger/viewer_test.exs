@@ -6,9 +6,9 @@ defmodule RingLogger.ViewerTest do
 
   use ExUnit.Case, async: false
 
-  require Logger
-
   alias RingLogger.Viewer
+
+  require Logger
 
   @default_pattern "\n$time $metadata[$level] $message\n"
 
