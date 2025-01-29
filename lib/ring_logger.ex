@@ -55,9 +55,9 @@ defmodule RingLogger do
   """
   @behaviour :gen_event
 
-  alias RingLogger.Viewer
   alias RingLogger.Autoclient
   alias RingLogger.Server
+  alias RingLogger.Viewer
 
   @typedoc "Option values used by the ring logger"
   @type server_option() ::
