@@ -902,6 +902,32 @@ defmodule RingLoggerTest do
 
       File.rm!("test/persistence.log")
     end
+
+    test "persists on terminate", %{io: io} do
+      Logger.remove_backend(RingLogger)
+
+      _ = File.rm("test/persistence.log")
+
+      # Start the backend with _just_ the persist_path and restore old
+      # config to allow other tests to run without loading a log file
+      old_env = Application.get_env(:logger, RingLogger)
+      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
+      Logger.add_backend(RingLogger)
+      Application.put_env(:logger, RingLogger, old_env)
+
+      Logger.add_backend(RingLogger)
+
+      :ok = RingLogger.attach(io: io)
+
+      Logger.info("Hello")
+
+      # Logs should save since we're terminating the backend
+      Logger.remove_backend(RingLogger)
+
+      assert File.exists?("test/persistence.log")
+
+      File.rm!("test/persistence.log")
+    end
   end
 
   defp capture_log(fun) do
