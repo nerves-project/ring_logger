@@ -37,7 +37,7 @@ defmodule RingLogger.ViewerTest do
     Logger.configure_backend(RingLogger,
       max_size: 10,
       format: @default_pattern,
-      metadata: [:request_id, :file, :line, :module, :function, :time],
+      metadata: [],
       buffers: [],
       persist_path: "/temp/file.log",
       persist_seconds: 1_000
