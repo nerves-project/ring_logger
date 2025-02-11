@@ -40,8 +40,10 @@ defmodule RingLogger.Viewer do
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
-  @spec view(String.t()) :: :ok
-  def view(cmd_string \\ "") do
+  @microsecond_factor 1_000_000
+
+  @spec view() :: :ok
+  def view() do
     screen_dims = get_screen_dims()
 
     if screen_dims.w <= @min_width do
@@ -54,15 +56,17 @@ defmodule RingLogger.Viewer do
 
     IO.puts("Starting RingLogger Viewer...")
 
-    if String.equivalent?(cmd_string, "") do
-      @init_state |> get_log_snapshot() |> loop()
-    else
-      parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
-    end
+    @init_state |> get_log_snapshot() |> loop()
   end
 
-  # parse_launch_cmd/2 returns updated state by applying multiple filters to initial state
-  defp parse_launch_cmd(cmd_string, state) do
+
+  @doc """
+  updates state by applying multiple filters to initial state or return initial state
+  """
+  def parse_launch_cmd("", state), do: state
+
+  @spec parse_launch_cmd(String.t(), map()) :: map()
+  def parse_launch_cmd(cmd_string, state) do
     cmd_list = String.split(cmd_string, ";")
 
     state =
@@ -78,8 +82,7 @@ defmodule RingLogger.Viewer do
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
       {"d", cmd, state} -> add_time_log(cmd, state)
-      {"q", _cmd, state} -> %{state | running: false}
-      _ -> state
+       _ -> state
     end
   end
 
@@ -160,7 +163,7 @@ defmodule RingLogger.Viewer do
       if state.applications_filter[:start_time] == nil do
         "[#{state.current_page}/#{state.last_page}] "
       else
-        {:ok, dt} = DateTime.from_unix(div(state.applications_filter[:start_time], 1_000_000))
+        {:ok, dt} = DateTime.from_unix(div(state.applications_filter[:start_time], @microsecond_factor))
         "[#{state.current_page}(#{dt})/#{state.last_page}] "
       end
 
@@ -286,6 +289,7 @@ defmodule RingLogger.Viewer do
       _ -> check_date_range(state, entry)
     end
   end
+
 
   defp maybe_apply_level_filter?(%{lowest_log_level: nil}, _entry), do: true
 
@@ -425,6 +429,30 @@ defmodule RingLogger.Viewer do
     end
   end
 
+  defp add_time_log(cmd_string, state) do
+    case String.split(cmd_string) do
+      [_cmd, date, time] ->
+        coupled = date <> "T" <> time <> "Z"
+
+        {:ok, dt, _offset} = DateTime.from_iso8601(coupled)
+
+        # we recieve time in ringlogger micro secs so to imporve precision we have multiplied secs with micro secs order
+        dt_start_micro_secs = DateTime.to_unix(dt) * @microsecond_factor
+        dt_end_micro_secs = DateTime.to_unix(dt) * @microsecond_factor + @microsecond_factor
+
+        %{
+          state
+          | applications_filter: [start_time: dt_start_micro_secs, end_time: dt_end_micro_secs],
+            current_page: 0
+        }
+
+      _ ->
+        state
+    end
+  rescue
+    _ -> state
+  end
+
   defp add_remove_app(cmd_string, state) do
     case String.split(cmd_string) do
       [_cmd] ->
@@ -442,30 +470,6 @@ defmodule RingLogger.Viewer do
         else
           %{state | applications_filter: [app_atom | state.applications_filter], current_page: 0}
         end
-
-      _ ->
-        state
-    end
-  rescue
-    _ -> state
-  end
-
-  defp add_time_log(cmd_string, state) do
-    case String.split(cmd_string) do
-      [_cmd, date, time] ->
-        coupled = date <> "T" <> time <> "Z"
-
-        {:ok, dt, _offset} = DateTime.from_iso8601(coupled)
-
-        # we recieve time in ringlogger micro secs so to imporve precision we have multiplied secs with micro secs order
-        dt_start_micro_secs = DateTime.to_unix(dt) * 1_000_000
-        dt_end_micro_secs = DateTime.to_unix(dt) * 1_000_000 + 1_000_000
-
-        %{
-          state
-          | applications_filter: [start_time: dt_start_micro_secs, end_time: dt_end_micro_secs],
-            current_page: 0
-        }
 
       _ ->
         state
