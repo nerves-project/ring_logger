@@ -1,9 +1,31 @@
 defmodule RingLogger.ViewerTest do
+  @moduledoc """
+  Ringlogger.Viewer Module contains all private functions except view() and newly created function parse_launch_command.
+  Thus test cases tries to showcase the updated state of the Ringlogger.Viewer module only not the visual implementation of the same.
+  """
+
   use ExUnit.Case, async: false
+
+  alias RingLogger.Viewer
 
   require Logger
 
   @default_pattern "\n$time $metadata[$level] $message\n"
+
+  @init_state %{
+    current_screen: :list,
+    running: true,
+    last_cmd_string: nil,
+    current_page: 0,
+    last_page: 0,
+    per_page: 0,
+    screen_dims: %{w: 0, h: 0},
+    lowest_log_level: nil,
+    before_boot: true,
+    grep_filter: nil,
+    applications_filter: [],
+    raw_logs: []
+  }
 
   setup do
     Logger.remove_backend(:console)
@@ -15,7 +37,7 @@ defmodule RingLogger.ViewerTest do
     Logger.configure_backend(RingLogger,
       max_size: 10,
       format: @default_pattern,
-      metadata: [:request_id, :file, :line, :module, :function, :time],
+      metadata: [],
       buffers: [],
       persist_path: "/temp/file.log",
       persist_seconds: 1_000
@@ -29,45 +51,15 @@ defmodule RingLogger.ViewerTest do
     {:ok, %{state: nil}}
   end
 
-
-  test "a command with multiple applications and multiple blank spaces", %{state: _state} do
-    Logger.debug("Ringlogger debug level sample msg",
-      application: :Ringlogger_firmware,
-      time: 1_735_140_308_331_070
-    )
-
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-    Logger.info("---------enter q to exit out of given test-----", application: :User)
-
-    assert :ok = RingLogger.Viewer.view(" a nil         Ringlogger_firmware          peridiod; q")
+  test "a command with single application using parse_launch_cmd/2" do
+    cmd_string = "a blofeld_firmware"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+    assert [:blofeld_firmware] == state.applications_filter
   end
 
-  test "a command with single application", %{state: _state} do
-    Logger.debug("Ringlogger debug level sample msg", application: :Ringlogger_firmware)
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-    Logger.debug("---------enter q to exit out of given test-----", application: :User)
-
-    assert :ok = RingLogger.Viewer.view("a telit_modem; q")
-  end
-
-  test "a command with multiple applications", %{state: _state} do
-    Logger.debug("Ringlogger debug level sample msg",
-      application: :Ringlogger_firmware,
-      time: 1_735_140_308_331_070
-    )
-
-    Logger.warning("Ringlogger warn level sample msg", application: :telit_modem)
-    Logger.info("Ringlogger info level sample msg", application: :peridiod)
-    Logger.critical("Ringlogger critical level sample msg", application: nil)
-    Logger.emergency("Ringlogger emergency level sample msg", application: :Vintage_Net)
-    Logger.info("---------enter q to exit out of given test-----", application: :User)
-
-    assert :ok = RingLogger.Viewer.view("a nil Ringlogger_firmware peridiod; q")
+  test "a command with multiple applications using parse_launch_cmd/2" do
+    cmd_string = "a blofeld_firmware telit_modem nil $kmsg"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+    assert [:blofeld_firmware, :telit_modem, nil, :"$kmsg"] == state.applications_filter
   end
 end

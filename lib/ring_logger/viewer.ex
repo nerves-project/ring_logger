@@ -40,8 +40,8 @@ defmodule RingLogger.Viewer do
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
-  @spec view(String.t()) :: :ok
-  def view(cmd_string \\ "") do
+  @spec view() :: :ok
+  def view() do
     screen_dims = get_screen_dims()
 
     if screen_dims.w <= @min_width do
@@ -54,15 +54,13 @@ defmodule RingLogger.Viewer do
 
     IO.puts("Starting RingLogger Viewer...")
 
-    if String.equivalent?(cmd_string, "") do
-      @init_state |> get_log_snapshot() |> loop()
-    else
-      parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
-    end
+    @init_state |> get_log_snapshot() |> loop()
   end
 
- # parse_launch_cmd/2 returns updated state by applying multiple filters to initial state
-  defp parse_launch_cmd(cmd_string, state) do
+  def parse_launch_cmd("", state), do: state
+
+  @spec parse_launch_cmd(String.t(), map()) :: map()
+  def parse_launch_cmd(cmd_string, state) do
     cmd_list = String.split(cmd_string, ";")
 
     state =
@@ -78,7 +76,6 @@ defmodule RingLogger.Viewer do
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
       {"a", cmd, state} -> add_remove_app(cmd, state)
-      {"q", _cmd, state} -> %{state | running: false}
       _ -> state
     end
   end
