@@ -59,7 +59,6 @@ defmodule RingLogger.Viewer do
     @init_state |> get_log_snapshot() |> loop()
   end
 
-
   @doc """
   updates state by applying multiple filters to initial state or return initial state
   """
@@ -82,7 +81,7 @@ defmodule RingLogger.Viewer do
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
       {"d", cmd, state} -> add_time_log(cmd, state)
-       _ -> state
+      _ -> state
     end
   end
 
@@ -163,7 +162,9 @@ defmodule RingLogger.Viewer do
       if state.applications_filter[:start_time] == nil do
         "[#{state.current_page}/#{state.last_page}] "
       else
-        {:ok, dt} = DateTime.from_unix(div(state.applications_filter[:start_time], @microsecond_factor))
+        {:ok, dt} =
+          DateTime.from_unix(div(state.applications_filter[:start_time], @microsecond_factor))
+
         "[#{state.current_page}(#{dt})/#{state.last_page}] "
       end
 
@@ -289,7 +290,6 @@ defmodule RingLogger.Viewer do
       _ -> check_date_range(state, entry)
     end
   end
-
 
   defp maybe_apply_level_filter?(%{lowest_log_level: nil}, _entry), do: true
 

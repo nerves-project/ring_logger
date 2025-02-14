@@ -51,7 +51,6 @@ defmodule RingLogger.ViewerTest do
     {:ok, %{state: nil}}
   end
 
-
   test "goto date command with Valid arguments using Viewer.parse_launch_cmd/2 command" do
     cmd_string = "d 2024-12-25 20:55:08"
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
@@ -65,5 +64,4 @@ defmodule RingLogger.ViewerTest do
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
     assert [] == state.applications_filter
   end
-
 end
