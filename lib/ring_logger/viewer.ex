@@ -57,6 +57,29 @@ defmodule RingLogger.Viewer do
     @init_state |> get_log_snapshot() |> loop()
   end
 
+  def parse_launch_cmd("", state), do: state
+
+  @spec parse_launch_cmd(String.t(), map()) :: map()
+  def parse_launch_cmd(cmd_string, state) do
+    cmd_list = String.split(cmd_string, ";")
+
+    state =
+      Enum.reduce(cmd_list, state, fn cmd, state ->
+        cmd_char = String.trim_leading(cmd, " ") |> String.at(0) |> String.downcase()
+        apply_command_parser(cmd_char, cmd, state)
+      end)
+
+    %{state | current_page: 0}
+  end
+
+  # apply_command_parser/3 returns state by applying single filter
+  defp apply_command_parser(cmd_char, cmd, state) do
+    case {cmd_char, cmd, state} do
+      {"a", cmd, state} -> add_remove_app(cmd, state)
+      _ -> state
+    end
+  end
+
   #### Drawing and IO Functions
   defp loop(%{running: false} = _state) do
     :ok
@@ -397,6 +420,12 @@ defmodule RingLogger.Viewer do
         else
           %{state | applications_filter: [app_atom | state.applications_filter], current_page: 0}
         end
+
+      # accept the series of applications if entered by user and convert them to atoms list
+      [_cmd | app_strings] ->
+        app_atom = Enum.map(app_strings, &String.to_existing_atom/1)
+
+        %{state | applications_filter: app_atom, current_page: 0}
 
       _ ->
         state
