@@ -62,7 +62,5 @@ defmodule RingLogger.ViewerTest do
     cmd_string = "r l debug; a"
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
     assert [] == state.applications_filter
-
-
   end
 end
