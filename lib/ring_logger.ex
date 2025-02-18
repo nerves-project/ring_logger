@@ -57,6 +57,7 @@ defmodule RingLogger do
 
   alias RingLogger.Autoclient
   alias RingLogger.Server
+  alias RingLogger.Viewer
 
   @typedoc "Option values used by the ring logger"
   @type server_option() ::
@@ -194,10 +195,16 @@ defmodule RingLogger do
   def tail(n, opts), do: Autoclient.tail(n, opts)
 
   @doc """
+  Starts the Ring Logger Viewer TUI app on the current prompt with intial arguments
+  """
+  @spec viewer(String.t()) :: :ok
+  defdelegate viewer(cmd_string), to: Viewer, as: :view
+
+  @doc """
   Starts the Ring Logger Viewer TUI app on the current prompt
   """
   @spec viewer() :: :ok
-  def viewer(), do: RingLogger.Viewer.view()
+  defdelegate viewer(), to: Viewer, as: :view
 
   @doc """
   Reset the index into the log for `next/1` to the oldest entry.
