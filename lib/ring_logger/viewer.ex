@@ -35,12 +35,20 @@ defmodule RingLogger.Viewer do
     before_boot: true,
     grep_filter: nil,
     applications_filter: [],
+    timestamp_filter: [],
     raw_logs: []
   }
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
   @microsecond_factor 1_000_000
+
+  @seconds_in_year 365 * 24 * 60 * 60
+  @seconds_in_month 30 * 24 * 60 * 60
+  @seconds_in_week 7 * 24 * 60 * 60
+  @seconds_in_day 24 * 60 * 60
+  @seconds_in_hour 60 * 60
+  @seconds_in_minute 60
 
   @spec view() :: :ok
   def view() do
@@ -158,14 +166,14 @@ defmodule RingLogger.Viewer do
   end
 
   defp compute_prompt(state) do
-    prefix =
-      if state.applications_filter[:start_time] == nil do
-        "[#{state.current_page}/#{state.last_page}] "
-      else
-        {:ok, dt} =
-          DateTime.from_unix(div(state.applications_filter[:start_time], @microsecond_factor))
+    prefix = "[#{state.current_page}/#{state.last_page}] "
 
-        "[#{state.current_page}(#{dt})/#{state.last_page}] "
+    timestamp_suffix =
+      if state.timestamp_filter != [] do
+        {:ok, dt} =
+          DateTime.from_unix(div(state.timestamp_filter[:start_time], @microsecond_factor))
+
+        "@#{dt}"
       end
 
     level_suffix =
@@ -174,7 +182,7 @@ defmodule RingLogger.Viewer do
       end
 
     app_suffix =
-      if state.applications_filter != [] and state.applications_filter[:start_time] == nil do
+      if state.applications_filter != [] do
         inspect(state.applications_filter)
       end
 
@@ -188,7 +196,7 @@ defmodule RingLogger.Viewer do
         "(#{inspect(state.grep_filter)})"
       end
 
-    "#{prefix}#{boot_suffix}#{grep_suffix}#{level_suffix}#{app_suffix}>"
+    "#{prefix}#{boot_suffix}#{grep_suffix}#{level_suffix}#{app_suffix}#{timestamp_suffix}>"
   end
 
   defp header(screen_dims) do
@@ -277,19 +285,34 @@ defmodule RingLogger.Viewer do
 
   defp apply_log_filters(entries, state) do
     Enum.filter(entries, fn entry ->
-      maybe_apply_app_or_time_filter?(state, entry) and maybe_apply_level_filter?(state, entry) and
-        maybe_apply_grep_filter?(state, entry)
+      maybe_apply_app_filter?(state, entry) and maybe_apply_level_filter?(state, entry) and
+        maybe_apply_grep_filter?(state, entry) and maybe_apply_timestamp_filter?(state, entry)
     end)
   end
 
-  defp maybe_apply_app_or_time_filter?(%{applications_filter: []}, _entry), do: true
+  defp maybe_apply_timestamp_filter?(%{timestamp_filter: []}, _entry), do: true
 
-  defp maybe_apply_app_or_time_filter?(%{applications_filter: app_list} = state, entry) do
-    case app_list[:start_time] do
-      nil -> entry.metadata[:application] in app_list
-      _ -> check_date_range(state, entry)
-    end
+  defp maybe_apply_timestamp_filter?(
+         %{timestamp_filter: [start_time: start_time, end_time: 0]},
+         entry
+       ),
+       do: check_start_timestamp(start_time, entry)
+
+  defp maybe_apply_timestamp_filter?(state, entry), do: check_date_range(state, entry)
+
+  defp check_start_timestamp(start_time, entry) do
+    entry.metadata[:time] >= start_time
   end
+
+  defp check_date_range(state, entry) do
+    entry.metadata[:time] >= state.timestamp_filter[:start_time] &&
+      entry.metadata[:time] <= state.timestamp_filter[:end_time]
+  end
+
+  defp maybe_apply_app_filter?(%{applications_filter: []}, _entry), do: true
+
+  defp maybe_apply_app_filter?(%{applications_filter: app_list}, entry),
+    do: entry.metadata[:application] in app_list
 
   defp maybe_apply_level_filter?(%{lowest_log_level: nil}, _entry), do: true
 
@@ -300,11 +323,6 @@ defmodule RingLogger.Viewer do
 
   defp maybe_apply_grep_filter?(%{grep_filter: expression}, entry),
     do: Regex.match?(expression, entry.message)
-
-  defp check_date_range(state, entry) do
-    entry.metadata[:time] >= state.applications_filter[:start_time] &&
-      entry.metadata[:time] <= state.applications_filter[:end_time]
-  end
 
   #### Command Handler Functions
 
@@ -430,27 +448,69 @@ defmodule RingLogger.Viewer do
   end
 
   defp add_time_log(cmd_string, state) do
-    case String.split(cmd_string) do
-      [_cmd, date, time] ->
-        coupled = date <> "T" <> time <> "Z"
+    case split_input(cmd_string) do
+      {datetime_str, duration_str} ->
+        dt_start_micro_secs =
+          convert_to_secs(String.trim_trailing(datetime_str)) * @microsecond_factor
 
-        {:ok, dt, _offset} = DateTime.from_iso8601(coupled)
-
-        # we recieve time in ringlogger micro secs so to imporve precision we have multiplied secs with micro secs order
-        dt_start_micro_secs = DateTime.to_unix(dt) * @microsecond_factor
-        dt_end_micro_secs = DateTime.to_unix(dt) * @microsecond_factor + @microsecond_factor
+        dt_end_micro_secs =
+          parse_duration_string(duration_str, datetime_str) * @microsecond_factor
 
         %{
           state
-          | applications_filter: [start_time: dt_start_micro_secs, end_time: dt_end_micro_secs],
+          | timestamp_filter: [start_time: dt_start_micro_secs, end_time: dt_end_micro_secs],
             current_page: 0
         }
-
-      _ ->
-        state
     end
   rescue
     _ -> state
+  end
+
+  defp parse_duration_string(nil, _datetime), do: 0
+
+  defp parse_duration_string(duration_string, datetime_string) do
+    with {:module, duration} <- Code.ensure_loaded(Duration),
+         {:ok, duration} <- duration.from_iso8601(duration_string) do
+      convert_to_secs(String.trim_trailing(datetime_string)) +
+        duration.year * @seconds_in_year +
+        duration.month * @seconds_in_month +
+        duration.week * @seconds_in_week +
+        duration.day * @seconds_in_day +
+        duration.hour * @seconds_in_hour +
+        duration.minute * @seconds_in_minute +
+        duration.second
+    else
+      _ -> 0
+    end
+  end
+
+  defp split_input(input) do
+    case String.split(input, ~r/(d\s|(?=P))/, parts: 3) do
+      [_cmd, datetime_str, duration_str] -> {datetime_str, duration_str}
+      [_cmd, datetime_str] -> {datetime_str, nil}
+    end
+  end
+
+  defp convert_to_secs(time_str) do
+    case Date.from_iso8601(time_str) do
+      {:ok, _dt} ->
+        {:ok, dt, _offset} = DateTime.from_iso8601(time_str <> "T00:00:00Z")
+        DateTime.to_unix(dt)
+
+      {:error, _reason} ->
+        try_naive_date_parsing(time_str)
+    end
+  end
+
+  defp try_naive_date_parsing(time_str) do
+    case NaiveDateTime.from_iso8601(time_str) do
+      {:ok, naive_dt} ->
+        {:ok, dt} = DateTime.from_naive(naive_dt, "Etc/UTC")
+        DateTime.to_unix(dt)
+
+      {:error, _reason} ->
+        0
+    end
   end
 
   defp add_remove_app(cmd_string, state) do
@@ -507,7 +567,7 @@ defmodule RingLogger.Viewer do
       "\t(g)rep [regex/string] - regex/string search expression, leaving argument blank clears filter.\n",
       "\t(l)evel [log_level] - filter to specified level (or higher), leaving level blank clears the filter.\n",
       "\t(a)pp [atom] - adds/remove an atom from the 'application' metadata filter, leaving argument blank clears filter.\n",
-      "\t(d)ate (goto date)command - d 2024-12-25 10:20:01 \n",
+      "\t(d)ate [start_time] [duration] - show entries at specified time and duration. [ex. d 2024-12-25 10:20:01 P0Y0M0W0DT0H1M0S]\n",
       "\t0..n - input any table index number to fully inspect a log line, and view its metadata.\n",
       "\t(e)xit or (q)uit - closes the log viewer.\n",
       "\t(h)elp / ? - show this screen.\n",
