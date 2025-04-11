@@ -463,7 +463,7 @@ defmodule RingLogger.Viewer do
         }
     end
   rescue
-    _ -> state
+    _ -> %{state | timestamp_filter: [], current_page: 0}
   end
 
   defp parse_duration_string(nil, _datetime), do: 0
