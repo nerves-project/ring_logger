@@ -35,10 +35,20 @@ defmodule RingLogger.Viewer do
     before_boot: true,
     grep_filter: nil,
     applications_filter: [],
+    timestamp_filter: [],
     raw_logs: []
   }
 
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
+
+  @microsecond_factor 1_000_000
+
+  @seconds_in_year 365 * 24 * 60 * 60
+  @seconds_in_month 30 * 24 * 60 * 60
+  @seconds_in_week 7 * 24 * 60 * 60
+  @seconds_in_day 24 * 60 * 60
+  @seconds_in_hour 60 * 60
+  @seconds_in_minute 60
 
   @spec view() :: :ok
   def view() do
@@ -57,6 +67,10 @@ defmodule RingLogger.Viewer do
     @init_state |> get_log_snapshot() |> loop()
   end
 
+
+  @doc """
+  updates state by applying multiple filters to initial state or return initial state
+  """
   def parse_launch_cmd("", state), do: state
 
   @spec parse_launch_cmd(String.t(), map()) :: map()
@@ -75,7 +89,11 @@ defmodule RingLogger.Viewer do
   # apply_command_parser/3 returns state by applying single filter
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
+
       {"a", cmd, state} -> add_remove_app(cmd, state)
+
+      {"d", cmd, state} -> add_time_log(cmd, state)
+
       _ -> state
     end
   end
@@ -155,6 +173,14 @@ defmodule RingLogger.Viewer do
   defp compute_prompt(state) do
     prefix = "[#{state.current_page}/#{state.last_page}] "
 
+    timestamp_suffix =
+      if state.timestamp_filter != [] do
+        {:ok, dt} =
+          DateTime.from_unix(div(state.timestamp_filter[:start_time], @microsecond_factor))
+
+        "@#{dt}"
+      end
+
     level_suffix =
       if state.lowest_log_level != nil do
         "(#{Atom.to_string(state.lowest_log_level)})"
@@ -175,7 +201,7 @@ defmodule RingLogger.Viewer do
         "(#{inspect(state.grep_filter)})"
       end
 
-    "#{prefix}#{boot_suffix}#{grep_suffix}#{level_suffix}#{app_suffix}>"
+    "#{prefix}#{boot_suffix}#{grep_suffix}#{level_suffix}#{app_suffix}#{timestamp_suffix}>"
   end
 
   defp header(screen_dims) do
@@ -265,8 +291,27 @@ defmodule RingLogger.Viewer do
   defp apply_log_filters(entries, state) do
     Enum.filter(entries, fn entry ->
       maybe_apply_app_filter?(state, entry) and maybe_apply_level_filter?(state, entry) and
-        maybe_apply_grep_filter?(state, entry)
+        maybe_apply_grep_filter?(state, entry) and maybe_apply_timestamp_filter?(state, entry)
     end)
+  end
+
+  defp maybe_apply_timestamp_filter?(%{timestamp_filter: []}, _entry), do: true
+
+  defp maybe_apply_timestamp_filter?(
+         %{timestamp_filter: [start_time: start_time, end_time: 0]},
+         entry
+       ),
+       do: check_start_timestamp(start_time, entry)
+
+  defp maybe_apply_timestamp_filter?(state, entry), do: check_date_range(state, entry)
+
+  defp check_start_timestamp(start_time, entry) do
+    entry.metadata[:time] >= start_time
+  end
+
+  defp check_date_range(state, entry) do
+    entry.metadata[:time] >= state.timestamp_filter[:start_time] &&
+      entry.metadata[:time] <= state.timestamp_filter[:end_time]
   end
 
   defp maybe_apply_app_filter?(%{applications_filter: []}, _entry), do: true
@@ -342,6 +387,10 @@ defmodule RingLogger.Viewer do
     add_remove_app(cmd_string, state) |> get_log_snapshot()
   end
 
+  defp command("d", cmd_string, state) do
+    add_time_log(cmd_string, state) |> get_log_snapshot()
+  end
+
   defp command("g", cmd_string, state) do
     add_remove_grep(cmd_string, state) |> get_log_snapshot()
   end
@@ -400,6 +449,72 @@ defmodule RingLogger.Viewer do
 
       _ ->
         state
+    end
+  end
+
+  defp add_time_log(cmd_string, state) do
+    case split_input(cmd_string) do
+      {datetime_str, duration_str} ->
+        dt_start_micro_secs =
+          convert_to_secs(String.trim_trailing(datetime_str)) * @microsecond_factor
+
+        dt_end_micro_secs =
+          parse_duration_string(duration_str, datetime_str) * @microsecond_factor
+
+        %{
+          state
+          | timestamp_filter: [start_time: dt_start_micro_secs, end_time: dt_end_micro_secs],
+            current_page: 0
+        }
+    end
+  rescue
+    _ -> %{state | timestamp_filter: [], current_page: 0}
+  end
+
+  defp parse_duration_string(nil, _datetime), do: 0
+
+  defp parse_duration_string(duration_string, datetime_string) do
+    with {:module, duration} <- Code.ensure_loaded(Duration),
+         {:ok, duration} <- duration.from_iso8601(duration_string) do
+      convert_to_secs(String.trim_trailing(datetime_string)) +
+        duration.year * @seconds_in_year +
+        duration.month * @seconds_in_month +
+        duration.week * @seconds_in_week +
+        duration.day * @seconds_in_day +
+        duration.hour * @seconds_in_hour +
+        duration.minute * @seconds_in_minute +
+        duration.second
+    else
+      _ -> 0
+    end
+  end
+
+  defp split_input(input) do
+    case String.split(input, ~r/(d\s|(?=P))/, parts: 3) do
+      [_cmd, datetime_str, duration_str] -> {datetime_str, duration_str}
+      [_cmd, datetime_str] -> {datetime_str, nil}
+    end
+  end
+
+  defp convert_to_secs(time_str) do
+    case Date.from_iso8601(time_str) do
+      {:ok, _dt} ->
+        {:ok, dt, _offset} = DateTime.from_iso8601(time_str <> "T00:00:00Z")
+        DateTime.to_unix(dt)
+
+      {:error, _reason} ->
+        try_naive_date_parsing(time_str)
+    end
+  end
+
+  defp try_naive_date_parsing(time_str) do
+    case NaiveDateTime.from_iso8601(time_str) do
+      {:ok, naive_dt} ->
+        {:ok, dt} = DateTime.from_naive(naive_dt, "Etc/UTC")
+        DateTime.to_unix(dt)
+
+      {:error, _reason} ->
+        0
     end
   end
 
@@ -463,6 +578,7 @@ defmodule RingLogger.Viewer do
       "\t(g)rep [regex/string] - regex/string search expression, leaving argument blank clears filter.\n",
       "\t(l)evel [log_level] - filter to specified level (or higher), leaving level blank clears the filter.\n",
       "\t(a)pp [atom] - adds/remove an atom from the 'application' metadata filter, leaving argument blank clears filter.\n",
+      "\t(d)ate [start_time] [duration] - show entries at specified time and duration. [ex. d 2024-12-25 10:20:01 P0Y0M0W0DT0H1M0S]\n",
       "\t0..n - input any table index number to fully inspect a log line, and view its metadata.\n",
       "\t(e)xit or (q)uit - closes the log viewer.\n",
       "\t(h)elp / ? - show this screen.\n",

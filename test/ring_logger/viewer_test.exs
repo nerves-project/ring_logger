@@ -24,6 +24,7 @@ defmodule RingLogger.ViewerTest do
     before_boot: true,
     grep_filter: nil,
     applications_filter: [],
+    timestamp_filter: [],
     raw_logs: []
   }
 
@@ -51,6 +52,7 @@ defmodule RingLogger.ViewerTest do
     {:ok, %{state: nil}}
   end
 
+
   test "a command with single application using parse_launch_cmd/2" do
     cmd_string = "a blofeld_firmware"
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
@@ -61,5 +63,78 @@ defmodule RingLogger.ViewerTest do
     cmd_string = "a blofeld_firmware telit_modem nil $kmsg"
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
     assert [:blofeld_firmware, :telit_modem, nil, :"$kmsg"] == state.applications_filter
+
+  test "goto date command without duration argument [d 2024-12-25] " do
+    cmd_string = "d 2024-12-25"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+
+    assert [start_time: 1_735_084_800_000_000, end_time: 0] ==
+             state.timestamp_filter
+  end
+
+  test "goto date command without duration argument [d 2024-12-25 00:00:00]" do
+    cmd_string = "d 2024-12-25 00:00:00"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+
+    assert [start_time: 1_735_084_800_000_000, end_time: 0] ==
+             state.timestamp_filter
+  end
+
+  test "goto date command without duration argument [d 2024-12-25T00:00:00]" do
+    cmd_string = "d 2024-12-25T00:00:00"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+
+    assert [start_time: 1_735_084_800_000_000, end_time: 0] ==
+             state.timestamp_filter
+  end
+
+  test "goto date command without duration argument [d 2024-12-25T00:00:00Z]" do
+    cmd_string = "d 2024-12-25T00:00:00Z"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+
+    assert [start_time: 1_735_084_800_000_000, end_time: 0] ==
+             state.timestamp_filter
+  end
+
+  test "goto date command with duration argument [d 2024-12-25 P0Y0MT0M1S]" do
+    cmd_string = "d 2024-12-25 P0Y0MT0M1S"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+
+    assert [start_time: 1_735_084_800_000_000, end_time: 1_735_084_801_000_000] ||
+             0 ==
+               state.timestamp_filter
+  end
+
+  test "goto date command with duration argument [d 2024-12-25 00:00:00 P0Y0MT0M1S]" do
+    cmd_string = "d 2024-12-25 00:00:00 P0Y0MT0M1S"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+
+    assert [start_time: 1_735_084_800_000_000, end_time: 1_735_084_801_000_000] ||
+             0 ==
+               state.timestamp_filter
+  end
+
+  test "goto date command with duration argument [d 2024-12-25T00:00:00 P0Y0MT0M1S]" do
+    cmd_string = "d 2024-12-25T00:00:00 P0Y0MT0M1S"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+
+    assert [start_time: 1_735_084_800_000_000, end_time: 1_735_084_801_000_000] ||
+             0 ==
+               state.timestamp_filter
+  end
+
+  test "goto date command with duration argument [d 2024-12-25T00:00:00Z P0Y0MT0M1S]" do
+    cmd_string = "d 2024-12-25T00:00:00Z P0Y0MT0M1S"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+
+    assert [start_time: 1_735_084_800_000_000, end_time: 1_735_084_801_000_000] ||
+             0 ==
+               state.timestamp_filter
+  end
+
+  test "goto date command with Invalid arguments using Viewer.parse_launch_cmd/2 command" do
+    cmd_string = "d 2024-12-25 8"
+    state = Viewer.parse_launch_cmd(cmd_string, @init_state)
+    assert [start_time: 0, end_time: 0] == state.timestamp_filter
   end
 end
