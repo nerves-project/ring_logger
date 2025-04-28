@@ -67,7 +67,6 @@ defmodule RingLogger.Viewer do
     @init_state |> get_log_snapshot() |> loop()
   end
 
-
   @doc """
   updates state by applying multiple filters to initial state or return initial state
   """
@@ -89,11 +88,8 @@ defmodule RingLogger.Viewer do
   # apply_command_parser/3 returns state by applying single filter
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
-
       {"a", cmd, state} -> add_remove_app(cmd, state)
-
       {"d", cmd, state} -> add_time_log(cmd, state)
-
       _ -> state
     end
   end

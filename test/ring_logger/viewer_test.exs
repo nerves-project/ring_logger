@@ -52,7 +52,6 @@ defmodule RingLogger.ViewerTest do
     {:ok, %{state: nil}}
   end
 
-
   test "a command with single application using parse_launch_cmd/2" do
     cmd_string = "a blofeld_firmware"
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
@@ -63,6 +62,7 @@ defmodule RingLogger.ViewerTest do
     cmd_string = "a blofeld_firmware telit_modem nil $kmsg"
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
     assert [:blofeld_firmware, :telit_modem, nil, :"$kmsg"] == state.applications_filter
+  end
 
   test "goto date command without duration argument [d 2024-12-25] " do
     cmd_string = "d 2024-12-25"
