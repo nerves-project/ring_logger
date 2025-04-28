@@ -88,6 +88,7 @@ defmodule RingLogger.Viewer do
   # apply_command_parser/3 returns state by applying single filter
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
+      {"a", cmd, state} -> add_remove_app(cmd, state)
       {"d", cmd, state} -> add_time_log(cmd, state)
       _ -> state
     end
@@ -530,6 +531,12 @@ defmodule RingLogger.Viewer do
         else
           %{state | applications_filter: [app_atom | state.applications_filter], current_page: 0}
         end
+
+      # accept the series of applications if entered by user and convert them to atoms list
+      [_cmd | app_strings] ->
+        app_atom = Enum.map(app_strings, &String.to_existing_atom/1)
+
+        %{state | applications_filter: app_atom, current_page: 0}
 
       _ ->
         state
