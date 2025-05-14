@@ -5,6 +5,8 @@
       name: "default",
       strict: true,
       checks: [
+        {Credo.Check.Design.AliasUsage,
+         excluded_namespaces: ["ExUnit", "Igniter", "IO", "Logger", "RingLogger"]},
         {Credo.Check.Refactor.MapInto, false},
         {Credo.Check.Warning.LazyLogging, false},
         {Credo.Check.Readability.LargeNumbers, only_greater_than: 86400},
