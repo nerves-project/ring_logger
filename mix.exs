@@ -10,6 +10,7 @@ defmodule RingLogger.MixProject do
       version: @version,
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
+      consolidate_protocols: Mix.env() != :dev,
       description: description(),
       package: package(),
       docs: docs(),
@@ -45,6 +46,7 @@ defmodule RingLogger.MixProject do
 
   defp deps do
     [
+      {:igniter, "~> 0.5", only: [:dev, :test]},
       {:circular_buffer, "~> 0.4.0"},
       {:benchee, "~> 1.1", only: :dev},
       {:ex_doc, "~> 0.18", only: :docs, runtime: false},
