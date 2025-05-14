@@ -14,7 +14,6 @@ defmodule RingLogger.InstallTest do
         """
       }
     )
-    |> Igniter.Project.Config.configure("config.exs", :logger, [:backends], [RingLogger])
     |> Igniter.compose_task("ring_logger.install", [])
     |> assert_has_patch("config/config.exs", ~S"""
      1 1   |import Config
