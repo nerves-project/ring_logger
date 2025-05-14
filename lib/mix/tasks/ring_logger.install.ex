@@ -3,12 +3,12 @@ defmodule Mix.Tasks.RingLogger.Install.Docs do
 
   @spec short_doc() :: String.t()
   def short_doc() do
-    "A short description of your task"
+    "Install RingLogger with default configuration."
   end
 
   @spec example() :: String.t()
   def example() do
-    "mix ring_logger.install --example arg"
+    "mix ring_logger.install"
   end
 
   @spec long_doc() :: String.t()
@@ -16,17 +16,11 @@ defmodule Mix.Tasks.RingLogger.Install.Docs do
     """
     #{short_doc()}
 
-    Longer explanation of your task
-
     ## Example
 
     ```bash
     #{example()}
     ```
-
-    ## Options
-
-    * `--example-option` or `-e` - Docs for your option
     """
   end
 end
@@ -74,7 +68,7 @@ if Code.ensure_loaded?(Igniter) do
     @impl Igniter.Mix.Task
     def igniter(igniter) do
       config_file =
-        if Igniter.Project.Deps.has_dep?(igniter, :nerves) do
+        if Igniter.exists?(igniter, "config/target.exs") do
           "target.exs"
         else
           "config.exs"
