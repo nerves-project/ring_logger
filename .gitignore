@@ -23,3 +23,4 @@ erl_crash.dump
 ring_logger-*.tar
 
 /example/mix.lock
+/test/persistence.log
