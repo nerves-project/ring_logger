@@ -1,15 +1,18 @@
 defmodule Mix.Tasks.RingLogger.Install.Docs do
   @moduledoc false
 
-  def short_doc do
+  @spec short_doc() :: String.t()
+  def short_doc() do
     "A short description of your task"
   end
 
-  def example do
+  @spec example() :: String.t()
+  def example() do
     "mix ring_logger.install --example arg"
   end
 
-  def long_doc do
+  @spec long_doc() :: String.t()
+  def long_doc() do
     """
     #{short_doc()}
 
@@ -89,6 +92,7 @@ else
 
     use Mix.Task
 
+    @impl Mix.Task
     def run(_argv) do
       Mix.shell().error("""
       The task 'ring_logger.install' requires igniter. Please install igniter and try again.
