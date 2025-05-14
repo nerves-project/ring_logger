@@ -23,7 +23,7 @@ Add `ring_logger` to your projects dependencies in your `mix.exs`:
 
 ```elixir
   def deps do
-    [{:ring_logger, "~> 0.6"}]
+    [{:ring_logger, "~> 0.11"}]
   end
 ```
 
