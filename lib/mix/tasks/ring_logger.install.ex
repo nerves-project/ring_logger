@@ -70,8 +70,15 @@ if Code.ensure_loaded?(Igniter) do
 
     @impl Igniter.Mix.Task
     def igniter(igniter) do
+      config_file =
+        if Igniter.Project.Deps.has_dep?(igniter, :nerves) do
+          "target.exs"
+        else
+          "config.exs"
+        end
+
       igniter
-      |> Igniter.Project.Config.configure("target.exs", :logger, [:backends], [RingLogger])
+      |> Igniter.Project.Config.configure(config_file, :logger, [:backends], [RingLogger])
     end
   end
 else

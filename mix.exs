@@ -46,7 +46,7 @@ defmodule RingLogger.MixProject do
 
   defp deps do
     [
-      {:igniter, "~> 0.5", only: [:dev, :test]},
+      {:igniter, "~> 0.5", optional: true, runtime: false},
       {:circular_buffer, "~> 0.4.0"},
       {:benchee, "~> 1.1", only: :dev},
       {:ex_doc, "~> 0.18", only: :docs, runtime: false},
