@@ -49,6 +49,7 @@ defmodule RingLogger.Viewer do
   @seconds_in_hour 60 * 60
   @seconds_in_minute 60
 
+
   @spec view(String.t()) :: :ok
   def view(cmd_string \\ "") do
     screen_dims = get_screen_dims()
@@ -90,6 +91,32 @@ defmodule RingLogger.Viewer do
       {"r", _cmd, _state} -> %{@init_state | current_page: 0}
       {"g", cmd, state} -> add_remove_grep(cmd, state)
       {"q", _cmd, state} -> %{state | running: false}
+      {"d", cmd, state} -> add_time_log(cmd, state)
+      _ -> state
+    end
+  end
+
+  @doc """
+  updates state by applying multiple filters to initial state or return initial state
+  """
+  def parse_launch_cmd("", state), do: state
+
+  @spec parse_launch_cmd(String.t(), map()) :: map()
+  def parse_launch_cmd(cmd_string, state) do
+    cmd_list = String.split(cmd_string, ";")
+
+    state =
+      Enum.reduce(cmd_list, state, fn cmd, state ->
+        cmd_char = String.trim_leading(cmd, " ") |> String.at(0) |> String.downcase()
+        apply_command_parser(cmd_char, cmd, state)
+      end)
+
+    %{state | current_page: 0}
+  end
+
+  # apply_command_parser/3 returns state by applying single filter
+  defp apply_command_parser(cmd_char, cmd, state) do
+    case {cmd_char, cmd, state} do
       {"d", cmd, state} -> add_time_log(cmd, state)
       _ -> state
     end
