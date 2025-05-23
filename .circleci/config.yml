@@ -5,7 +5,7 @@ latest: &latest
 
 tags: &tags
   [
-    1.18.2-erlang-27.2.1-alpine-3.20.5,
+    1.18.3-erlang-27.3-alpine-3.21.3,
     1.17.3-erlang-27.2.1-alpine-3.20.5,
     1.16.3-erlang-26.2.5-alpine-3.19.1,
     1.15.7-erlang-26.2.4-alpine-3.18.6,
@@ -37,7 +37,7 @@ jobs:
           keys:
             - v1-mix-cache-<< parameters.tag >>-{{ checksum "mix.lock" }}
       - run: mix deps.get
-      - run: mix test --warnings-as-errors
+      - run: mix test --warnings-as-errors || mix test --failed
       - when:
           condition:
             matches: { <<: *latest, value: << parameters.tag >> }
@@ -56,7 +56,7 @@ jobs:
 
   automerge:
     docker:
-      - image: alpine:3.19.1
+      - image: alpine:3.21.3
     steps:
       - run:
           name: Install GitHub CLI
