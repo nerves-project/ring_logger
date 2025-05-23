@@ -64,7 +64,7 @@ defmodule RingLogger.ViewerTest do
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
     assert [] == state.applications_filter
   end
-  
+
   test "goto date command without duration argument [d 2024-12-25] " do
     cmd_string = "d 2024-12-25"
     state = Viewer.parse_launch_cmd(cmd_string, @init_state)
