@@ -42,7 +42,6 @@ defmodule RingLogger.Viewer do
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
   @microsecond_factor 1_000_000
-
   @seconds_in_year 365 * 24 * 60 * 60
   @seconds_in_month 30 * 24 * 60 * 60
   @seconds_in_week 7 * 24 * 60 * 60
@@ -50,8 +49,9 @@ defmodule RingLogger.Viewer do
   @seconds_in_hour 60 * 60
   @seconds_in_minute 60
 
-  @spec view() :: :ok
-  def view() do
+
+  @spec view(String.t()) :: :ok
+  def view(cmd_string \\ "") do
     screen_dims = get_screen_dims()
 
     if screen_dims.w <= @min_width do
@@ -62,9 +62,7 @@ defmodule RingLogger.Viewer do
       raise "Sorry, your terminal needs to be at least #{@min_height} rows high to use this tool!"
     end
 
-    IO.puts("Starting RingLogger Viewer...")
-
-    @init_state |> get_log_snapshot() |> loop()
+    parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
   end
 
   @doc """
@@ -88,7 +86,11 @@ defmodule RingLogger.Viewer do
   # apply_command_parser/3 returns state by applying single filter
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
+      {"l", cmd, state} -> set_log_level(cmd, state)
       {"a", cmd, state} -> add_remove_app(cmd, state)
+      {"r", _cmd, _state} -> %{@init_state | current_page: 0}
+      {"g", cmd, state} -> add_remove_grep(cmd, state)
+      {"q", _cmd, state} -> %{state | running: false}
       {"d", cmd, state} -> add_time_log(cmd, state)
       _ -> state
     end
@@ -340,11 +342,19 @@ defmodule RingLogger.Viewer do
         inspect_entry(index, state, current_logs)
         state
       else
-        first_char = String.at(cmd_string, 0) |> String.downcase()
-        command(first_char, cmd_string, state)
+        handle_commands(cmd_string, state, String.contains?(cmd_string, ";"))
       end
 
     %{new_state | last_cmd_string: cmd_string}
+  end
+
+  defp handle_commands(cmd_string, state, true) do
+    parse_launch_cmd(cmd_string, state) |> get_log_snapshot()
+  end
+
+  defp handle_commands(cmd_string, state, false) do
+    cmd = String.at(cmd_string, 0) |> String.downcase()
+    command(cmd, cmd_string, state)
   end
 
   defp command(cmd_exit, _cmd_string, state) when cmd_exit in ["e", "q"] do
@@ -574,6 +584,7 @@ defmodule RingLogger.Viewer do
       "\t(g)rep [regex/string] - regex/string search expression, leaving argument blank clears filter.\n",
       "\t(l)evel [log_level] - filter to specified level (or higher), leaving level blank clears the filter.\n",
       "\t(a)pp [atom] - adds/remove an atom from the 'application' metadata filter, leaving argument blank clears filter.\n",
+      "\t(;)concat commands [example usage] - a telit_modem; g some_name \n",
       "\t(d)ate [start_time] [duration] - show entries at specified time and duration. [ex. d 2024-12-25 10:20:01 P0Y0M0W0DT0H1M0S]\n",
       "\t0..n - input any table index number to fully inspect a log line, and view its metadata.\n",
       "\t(e)xit or (q)uit - closes the log viewer.\n",
