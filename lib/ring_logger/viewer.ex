@@ -49,7 +49,6 @@ defmodule RingLogger.Viewer do
   @seconds_in_hour 60 * 60
   @seconds_in_minute 60
 
-
   @spec view(String.t()) :: :ok
   def view(cmd_string \\ "") do
     screen_dims = get_screen_dims()
