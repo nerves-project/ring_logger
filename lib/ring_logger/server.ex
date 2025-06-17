@@ -136,12 +136,12 @@ defmodule RingLogger.Server do
     {:reply, config, state}
   end
 
-  def handle_call({:configure, opts}, _from, state) do
+  def handle_call({:configure, opts}, _from, %__MODULE__{} = state) do
     logs = merge_buffers(state)
 
     max_size = Keyword.get(opts, :max_size, @default_max_size)
 
-    state = %__MODULE__{state | default_buffer: CircularBuffer.new(max_size)}
+    state = %{state | default_buffer: CircularBuffer.new(max_size)}
 
     state =
       case Keyword.get(opts, :buffers) do
@@ -149,7 +149,7 @@ defmodule RingLogger.Server do
           state
 
         buffers ->
-          %__MODULE__{state | buffers: reset_buffers(buffers)}
+          %{state | buffers: reset_buffers(buffers)}
       end
 
     # Reinsert old buffers to let new max size filter out
