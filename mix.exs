@@ -44,7 +44,7 @@ defmodule RingLogger.MixProject do
 
   defp deps do
     [
-      {:circular_buffer, "~> 0.4.0"},
+      {:circular_buffer, "~> 1.0 or ~> 0.4.0"},
       {:benchee, "~> 1.1", only: :dev},
       {:ex_doc, "~> 0.18", only: :docs, runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
