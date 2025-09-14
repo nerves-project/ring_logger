@@ -2,6 +2,15 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.11.4
+
+* Changes
+  * Persist logs on terminate if appropriate (Thanks @taun-fellowes)
+  * Support date entry navigation in the log viewer (Thanks @Shivaji-Dhepale, @Suraj Borate)
+  * Fix deprecation warnings in example code (Thanks @axelson)
+  * Fix Elixir 1.19 warnings
+  * Drop support for Elixir <1.13
+
 ## v0.11.3
 
 * Fixes
