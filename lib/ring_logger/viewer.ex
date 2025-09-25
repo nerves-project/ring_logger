@@ -42,7 +42,6 @@ defmodule RingLogger.Viewer do
   @level_strings ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]
 
   @microsecond_factor 1_000_000
-
   @seconds_in_year 365 * 24 * 60 * 60
   @seconds_in_month 30 * 24 * 60 * 60
   @seconds_in_week 7 * 24 * 60 * 60
@@ -50,8 +49,8 @@ defmodule RingLogger.Viewer do
   @seconds_in_hour 60 * 60
   @seconds_in_minute 60
 
-  @spec view() :: :ok
-  def view() do
+  @spec view(String.t()) :: :ok
+  def view(cmd_string \\ "") do
     screen_dims = get_screen_dims()
 
     if screen_dims.w <= @min_width do
@@ -62,9 +61,7 @@ defmodule RingLogger.Viewer do
       raise "Sorry, your terminal needs to be at least #{@min_height} rows high to use this tool!"
     end
 
-    IO.puts("Starting RingLogger Viewer...")
-
-    @init_state |> get_log_snapshot() |> loop()
+    parse_launch_cmd(cmd_string, @init_state) |> get_log_snapshot() |> loop()
   end
 
   @doc """
@@ -88,6 +85,11 @@ defmodule RingLogger.Viewer do
   # apply_command_parser/3 returns state by applying single filter
   defp apply_command_parser(cmd_char, cmd, state) do
     case {cmd_char, cmd, state} do
+      {"l", cmd, state} -> set_log_level(cmd, state)
+      {"a", cmd, state} -> add_remove_app(cmd, state)
+      {"r", _cmd, _state} -> %{@init_state | current_page: 0}
+      {"g", cmd, state} -> add_remove_grep(cmd, state)
+      {"q", _cmd, state} -> %{state | running: false}
       {"d", cmd, state} -> add_time_log(cmd, state)
       _ -> state
     end
