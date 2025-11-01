@@ -139,7 +139,7 @@ defmodule RingLogger do
   Options include:
 
   * Options from `attach/1`
-  * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
+  * `:pager` - a function for printing log messages to the console. Defaults to `IO.write/2`.
   """
   @spec next(client_options()) :: :ok | {:error, term()}
   defdelegate next(opts \\ []), to: Autoclient
@@ -152,7 +152,7 @@ defmodule RingLogger do
   Options include:
 
   * Options from `attach/1`
-  * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
+  * `:pager` - a function for printing log messages to the console. Defaults to `IO.write/2`.
   """
   @spec count_next(client_options()) :: non_neg_integer()
   defdelegate count_next(opts \\ []), to: Autoclient
@@ -188,7 +188,7 @@ defmodule RingLogger do
   Options include:
 
   * Options from `attach/1`
-  * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
+  * `:pager` - a function for printing log messages to the console. Defaults to `IO.write/2`.
   """
   @spec tail(non_neg_integer(), client_options()) :: :ok
   def tail(n, opts), do: Autoclient.tail(n, opts)
@@ -216,7 +216,7 @@ defmodule RingLogger do
     Options include:
 
   * Options from `attach/1`
-  * `:pager` - a function for printing log messages to the console. Defaults to `IO.binwrite/2`.
+  * `:pager` - a function for printing log messages to the console. Defaults to `IO.write/2`.
   * `:before` - Number of lines before the match to include
   * `:after` - NUmber of lines after the match to include
   """
@@ -331,19 +331,45 @@ defmodule RingLogger do
     {mod, safe_chardata_to_string(msg), ts, md}
   end
 
-  defp safe_chardata_to_string(msg) do
-    IO.chardata_to_string(msg)
-  rescue
-    UnicodeConversionError ->
-      # ASCII?
-      safe_iodata_to_binary(msg)
-  end
+  if Version.match?(System.version(), ">= 1.16.0") do
+    defp safe_chardata_to_string(msg) when is_binary(msg) do
+      if String.valid?(msg, :fast_ascii) do
+        msg
+      else
+        String.replace_invalid(msg)
+      end
+    end
 
-  defp safe_iodata_to_binary(msg) do
-    IO.iodata_to_binary(msg)
-  rescue
-    ArgumentError ->
-      # Give up
-      inspect(msg)
+    defp safe_chardata_to_string(msg) when is_list(msg) do
+      IO.chardata_to_string(msg)
+    rescue
+      UnicodeConversionError ->
+        # ASCII?
+        safe_iodata_to_binary(msg)
+    end
+
+    defp safe_iodata_to_binary(msg) do
+      IO.iodata_to_binary(msg) |> String.replace_invalid()
+    rescue
+      ArgumentError ->
+        # Give up
+        inspect(msg)
+    end
+  else
+    # Elixir 1.15 and below
+    defp safe_chardata_to_string(msg) when is_binary(msg) do
+      if String.valid?(msg) do
+        msg
+      else
+        inspect(msg)
+      end
+    end
+
+    defp safe_chardata_to_string(msg) when is_list(msg) do
+      IO.chardata_to_string(msg)
+    rescue
+      UnicodeConversionError ->
+        inspect(msg)
+    end
   end
 end

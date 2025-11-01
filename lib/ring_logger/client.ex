@@ -96,7 +96,7 @@ defmodule RingLogger.Client do
   def tail(client_pid, n, opts \\ []) do
     {io, to_print} = GenServer.call(client_pid, {:tail, n})
 
-    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+    pager = Keyword.get(opts, :pager, &IO.write/2)
     pager.(io, to_print)
   end
 
@@ -111,7 +111,7 @@ defmodule RingLogger.Client do
   def next(client_pid, opts \\ []) do
     {io, to_print} = GenServer.call(client_pid, :next)
 
-    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+    pager = Keyword.get(opts, :pager, &IO.write/2)
 
     pager.(io, to_print)
   end
@@ -167,7 +167,7 @@ defmodule RingLogger.Client do
   def grep_metadata(client_pid, key, %Regex{} = regex, opts) do
     {io, to_print} = GenServer.call(client_pid, {:grep_metadata, key, regex, opts})
 
-    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+    pager = Keyword.get(opts, :pager, &IO.write/2)
     pager.(io, to_print)
   end
 
@@ -193,7 +193,7 @@ defmodule RingLogger.Client do
   def grep(client_pid, %Regex{} = regex, opts) do
     {io, to_print} = GenServer.call(client_pid, {:grep, regex, opts})
 
-    pager = Keyword.get(opts, :pager, &IO.binwrite/2)
+    pager = Keyword.get(opts, :pager, &IO.write/2)
     pager.(io, to_print)
   end
 
@@ -484,7 +484,7 @@ defmodule RingLogger.Client do
   defp maybe_print(msg, state) do
     if should_print?(msg, state) do
       item = format_message(msg, state)
-      IO.binwrite(state.io, item)
+      IO.write(state.io, item)
     end
   end
 
