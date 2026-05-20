@@ -19,7 +19,14 @@ and are receiving messages as they're sent, they won't stomp what you're typing.
 
 ## Configuration
 
-Add `ring_logger` to your projects dependencies in your `mix.exs`:
+Install using [igniter](https://hexdocs.pm/igniter) for the most comfortable experience:
+
+```sh
+mix archive.install hex igniter_new
+mix igniter.install ring_logger
+```
+
+Or add `ring_logger` to your projects dependencies in your `mix.exs`:
 
 ```elixir
   def deps do
