@@ -4,7 +4,7 @@
 [![Hex version](https://img.shields.io/hexpm/v/ring_logger.svg "Hex version")](https://hex.pm/packages/ring_logger)
 
 This is an in-memory ring buffer backend for the [Elixir
-Logger](https://hexdocs.pm/logger/Logger.html) with convenience methods for
+Logger](https://logger.hexdocs.pm/Logger.html) with convenience methods for
 accessing the logs from the IEx prompt.
 
 Use cases:
@@ -262,7 +262,7 @@ Important message! iex:4
 
 Within an application, the `iex:4` would be the source file path and line number.
 
-See [Logger custom formatting](https://hexdocs.pm/logger/Logger.html#module-custom-formatting)
+See [Logger custom formatting](https://logger.hexdocs.pm/Logger.html#module-custom-formatting)
 for more information.
 
 ## Programmatic usage
