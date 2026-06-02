@@ -55,7 +55,7 @@ defmodule RingLogger.Client do
   * `:colors` -
   * `:metadata` - A KV list of additional metadata
   * `:format` - A custom format string, or a {module, function} tuple (see
-    https://hexdocs.pm/logger/master/Logger.html#module-custom-formatting)
+    https://logger.hexdocs.pm/master/Logger.html#module-custom-formatting)
   * `:level` - The minimum log level to report.
   * `:module_levels` - a map of log level overrides per module. For example,
     %{MyModule => :error, MyOtherModule => :none}
