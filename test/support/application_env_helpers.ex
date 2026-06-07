@@ -21,6 +21,7 @@ defmodule RingLogger.ApplicationEnvHelpers do
 
       on_exit.(fn ->
         # We need to delete all the existing env because `Application.put_all_env` does a deep merge
+        # credo:disable-for-next-line Credo.Check.Refactor.Nesting
         for {key, _val} <- Application.get_all_env(app), do: Application.delete_env(app, key)
         Application.put_all_env([{app, original_envs}])
       end)
