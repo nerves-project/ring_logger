@@ -1,7 +1,7 @@
 defmodule RingLogger.ViewerTest do
   @moduledoc """
-  Ringlogger.Viewer Module contains all private functions except view() and newly created function parse_launch_command.
-  Thus test cases tries to showcase the updated state of the Ringlogger.Viewer module only not the visual implementation of the same.
+  RingLogger.Viewer Module contains all private functions except view() and newly created function parse_launch_command.
+  Thus test cases tries to showcase the updated state of the RingLogger.Viewer module only not the visual implementation of the same.
   """
 
   use ExUnit.Case, async: false
@@ -9,8 +9,6 @@ defmodule RingLogger.ViewerTest do
   alias RingLogger.Viewer
 
   require Logger
-
-  @default_pattern "\n$time $metadata[$level] $message\n"
 
   @init_state %{
     current_screen: :list,
@@ -27,30 +25,6 @@ defmodule RingLogger.ViewerTest do
     timestamp_filter: [],
     raw_logs: []
   }
-
-  setup do
-    Logger.remove_backend(:console)
-
-    Logger.flush()
-
-    Logger.add_backend(RingLogger)
-
-    Logger.configure_backend(RingLogger,
-      max_size: 10,
-      format: @default_pattern,
-      metadata: [],
-      buffers: [],
-      persist_path: "/temp/file.log",
-      persist_seconds: 1_000
-    )
-
-    on_exit(fn ->
-      File.rm("/temp/file.log")
-      Logger.remove_backend(RingLogger)
-    end)
-
-    {:ok, %{state: nil}}
-  end
 
   test "goto date command without duration argument [d 2024-12-25] " do
     cmd_string = "d 2024-12-25"

@@ -3,9 +3,9 @@
 [![CircleCI](https://circleci.com/gh/nerves-project/ring_logger.svg?style=svg)](https://circleci.com/gh/nerves-project/ring_logger)
 [![Hex version](https://img.shields.io/hexpm/v/ring_logger.svg "Hex version")](https://hex.pm/packages/ring_logger)
 
-This is an in-memory ring buffer backend for the [Elixir
-Logger](https://hexdocs.pm/logger/Logger.html) with convenience methods for
-accessing the logs from the IEx prompt.
+This is an in-memory ring buffer handler for the [Erlang
+`:logger`](https://www.erlang.org/doc/apps/kernel/logger.html) with convenience
+methods for accessing the logs from the IEx prompt.
 
 Use cases:
 
@@ -19,78 +19,63 @@ and are receiving messages as they're sent, they won't stomp what you're typing.
 
 ## Configuration
 
-Add `ring_logger` to your projects dependencies in your `mix.exs`:
+Add `ring_logger` to your project's dependencies in your `mix.exs`:
 
 ```elixir
   def deps do
-    [{:ring_logger, "~> 0.11"}]
+    [{:ring_logger, "~> 2.0"}]
   end
 ```
 
-Then configure the logger in your `config/config.exs`:
+Then configure the handler in your `config/config.exs`:
 
 ```elixir
 import Config
 
-# Add the RingLogger backend. This removes the default :console backend.
-config :logger, backends: [RingLogger]
-
-# Periodically save logs to a file, and load logs on GenServer start from this file
-config :logger, RingLogger, persist_path: "./myapp.log", persist_seconds: 300
-
-# Save messages to one circular buffer that holds 1024 entries.
-config :logger, RingLogger, max_size: 1024
-
-# Separate out `:error` and `:warning` messages to their own circular buffer.
-# All other log messages are stored in the default circular buffer.
-config :logger, RingLogger, buffers: %{
-  errors: %{
-    levels: [:error, :warning],
-    max_size: 1024
-  }
-}
-
-# Specify circular buffers for all log levels. The default circular buffer won't
-# be used in this example configuration.
-config :logger, RingLogger, buffers: %{
-  low_priority: %{
-    levels: [:warning, :notice, :info, :debug],
-    max_size: 1024
-  },
-  high_priority: %{
-    levels: [:emergency, :alert, :critical, :error],
-    max_size: 1024
-  }
-}
-
-# You can also configure `RingLogger.Client` options to be used
-# with every client by default
-config :logger, RingLogger,
-  application_levels: %{my_app: :error},
-  colors: [debug: :yellow],
-  level: :debug
+# Add the RingLogger handler
+config :logger, :handlers,
+  ring_logger: %{module: RingLogger.Handler, config: %{max_size: 1024}}
 ```
 
-Or you can start the backend manually by running the following:
+Or you can add it manually at runtime:
 
 ```elixir
-Logger.add_backend(RingLogger)
-Logger.configure_backend(RingLogger, max_size: 1024)
+iex> RingLogger.add(max_size: 1024)
+:ok
 ```
+
+### Combining with disk logging
+
+RingLogger focuses on in-memory log access for interactive debugging. For
+persistent logging, use OTP's built-in handlers alongside RingLogger. For
+example, to ensure error messages survive reboots on a Nerves device:
+
+```elixir
+import Config
+
+# In-memory ring for IEx debugging
+config :logger, :handlers,
+  ring_logger: %{module: RingLogger.Handler, config: %{max_size: 1024}},
+  error_disk: %{
+    module: :logger_std_h,
+    level: :error,
+    config: %{
+      file: ~c"/data/logs/error.log",
+      max_no_bytes: 256_000,
+      max_no_files: 4,
+      compress_on_rotate: true
+    }
+  }
+```
+
+This gives you the best of both: interactive debugging via RingLogger and
+reliable disk persistence via OTP's `logger_std_h` (with automatic rotation and
+compression).
 
 ## IEx session usage
 
 See the example project for a hands-on walk-through of using the logger. Read on
 for the highlights.
-
-For the purpose of the example, when you're in IEx, log messages shouldn't be
-printed to the console by default. They'll be coming from the console logger, so
-turn them off:
-
-```elixir
-iex> Logger.remove_backend(:console)
-:ok
-```
 
 To see log messages as they come in with RingLogger, call `RingLogger.attach()`
 and then to make the log messages stop, call `RingLogger.detach()`. The `attach`
@@ -100,8 +85,8 @@ etc.
 Here's an example:
 
 ```elixir
-iex> Logger.add_backend(RingLogger)
-{:ok, #PID<0.199.0>}
+iex> RingLogger.add()
+:ok
 iex> RingLogger.attach
 :ok
 iex> require Logger
@@ -185,12 +170,12 @@ Also, it allows for filtering the whole project on a higher level, but a
 particular module, or a subset of modules, to log at a lower level like so:
 
 ```elixir
-iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warn)
+iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warning)
 ```
 
 In the example above log messages at the `:debug` level will be logged, but
-every other module will be logging at the `:warn` level. You can also turn off a
-module's logging completely by specifying `:none`.
+every other module will be logging at the `:warning` level. You can also turn
+off a module's logging completely by specifying `:none`.
 
 Additionally, you can specify the same options at the application level to
 disable logging for all its modules using the `:application_levels` option
@@ -210,8 +195,9 @@ iex> RingLogger.attach(application_levels: %{my_app: :info}, module_levels: %{My
 In the above example, all modules of `:my_app` with have a level of `:info` except
 for `MyApp.Important`, which will have a level of `:debug`.
 
-As a note if the Elixir `Logger` level is set too low you will miss some log
-messages.
+Note that the Erlang `:logger` primary level filters messages before they reach
+RingLogger. Ensure the primary level is set low enough for the messages you
+want to see (e.g., `:logger.set_primary_config(:level, :debug)`).
 
 ## Saving the log
 
@@ -274,32 +260,20 @@ the raw log entries by calling `RingLogger.get/0`:
 ```elixir
 iex> RingLogger.get
 [
-  debug: {Logger, "8", {{2018, 2, 5}, {17, 44, 7, 675}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "ring_logger/example/lib/example.ex",
-     line: 11
-   ]},
-  debug: {Logger, "9", {{2018, 2, 5}, {17, 44, 8, 676}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "ring_logger/example/lib/example.ex",
-     line: 11
-   ]},
-  debug: {Logger, "10", {{2018, 2, 5}, {17, 44, 9, 677}},
-   [
-     pid: #PID<0.139.0>,
-     application: :example,
-     module: Example,
-     function: "log/1",
-     file: "ring_logger/example/lib/example.ex",
-     line: 11
-   ]}
+  %{
+    level: :debug,
+    module: Example,
+    message: "8",
+    timestamp: {{2018, 2, 5}, {17, 44, 7, 675}},
+    metadata: [
+      pid: #PID<0.139.0>,
+      application: :example,
+      module: Example,
+      mfa: {Example, :log, 1},
+      file: "ring_logger/example/lib/example.ex",
+      line: 11,
+      index: 0
+    ]
+  }
 ]
 ```

@@ -1,14 +1,14 @@
 defmodule RingLogger.MixProject do
   use Mix.Project
 
-  @version "0.11.5"
+  @version "2.0.0-dev"
   @source_url "https://github.com/nerves-project/ring_logger"
 
   def project do
     [
       app: :ring_logger,
       version: @version,
-      elixir: "~> 1.13",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
@@ -53,7 +53,7 @@ defmodule RingLogger.MixProject do
   end
 
   defp description do
-    "A ring buffer backend for Elixir Logger with IO streaming"
+    "An in-memory ring buffer handler for the Erlang logger with IEx helpers"
   end
 
   defp package do

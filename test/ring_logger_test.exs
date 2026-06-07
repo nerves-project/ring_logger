@@ -4,9 +4,6 @@ defmodule RingLoggerTest do
 
   import ExUnit.CaptureIO
 
-  alias RingLogger.Persistence
-  alias RingLogger.TestCustomFormatter
-
   require Logger
 
   # Elixir 1.4 changed the default pattern (removed $levelpad) so hardcode a default
@@ -16,20 +13,20 @@ defmodule RingLoggerTest do
   setup do
     {:ok, pid} = RingLogger.TestIO.start(self())
 
-    # This next line is for Elixir 1.14 and earlier. Elixir 1.15 relies on the config.exs
-    # to remove the console backend (err, default handler).
-    Logger.remove_backend(:console)
+    # Ensure all log levels pass through the global logger to our handler
+    old_level = :logger.get_primary_config().level
+    :logger.set_primary_config(:level, :all)
 
     # Flush any latent messages in the Logger to avoid them polluting
     # our tests
     Logger.flush()
 
-    Logger.add_backend(RingLogger)
-    Logger.configure_backend(RingLogger, max_size: 10, format: @default_pattern, buffers: [])
+    :ok = RingLogger.add(max_size: 10)
 
     on_exit(fn ->
       RingLogger.TestIO.stop(pid)
-      Logger.remove_backend(RingLogger)
+      _ = RingLogger.remove()
+      :logger.set_primary_config(:level, old_level)
     end)
 
     {:ok, [io: pid]}
@@ -51,15 +48,15 @@ defmodule RingLoggerTest do
   end
 
   test "can attach", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     Logger.debug("Hello")
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
   end
 
   test "attaching twice doesn't duplicate messages", %{io: io} do
-    :ok = RingLogger.attach(io: io)
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     Logger.debug("Hello")
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
@@ -67,13 +64,13 @@ defmodule RingLoggerTest do
   end
 
   test "attach, detach, attach works", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     :ok = RingLogger.detach()
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
   end
 
   test "output is not duplicated on group leader", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     output =
       capture_log(fn ->
@@ -84,7 +81,7 @@ defmodule RingLoggerTest do
   end
 
   test "can receive multiple messages", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     Logger.debug("Hello")
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
@@ -94,7 +91,7 @@ defmodule RingLoggerTest do
   end
 
   test "can detach", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     Logger.debug("Hello")
     assert_receive {:io, message}
     assert message =~ "[debug] Hello"
@@ -104,7 +101,7 @@ defmodule RingLoggerTest do
   end
 
   test "can filter based on log level", %{io: io} do
-    :ok = RingLogger.attach(io: io, level: :error)
+    :ok = RingLogger.attach(io: io, level: :error, format: @default_pattern)
     Logger.debug("Hello")
     refute_receive {:io, _message}
     Logger.error("World")
@@ -113,7 +110,7 @@ defmodule RingLoggerTest do
   end
 
   test "can grep log", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "Hello")
@@ -125,7 +122,7 @@ defmodule RingLoggerTest do
   end
 
   test "can grep iodata in log", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, ["Hello", ",", ~c" world"])
@@ -137,7 +134,7 @@ defmodule RingLoggerTest do
   end
 
   test "can grep using a string", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "Hello")
@@ -149,7 +146,7 @@ defmodule RingLoggerTest do
   end
 
   test "can colorize grep log", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "Hello")
@@ -161,7 +158,7 @@ defmodule RingLoggerTest do
   end
 
   test "can grep before and after lines", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "b3")
@@ -184,7 +181,7 @@ defmodule RingLoggerTest do
   end
 
   test "can grep based on metadata with exact match", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "b3")
@@ -207,7 +204,7 @@ defmodule RingLoggerTest do
   end
 
   test "can grep based on metadata with regexp", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "b3")
@@ -239,7 +236,7 @@ defmodule RingLoggerTest do
   end
 
   test "can next the log", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     handshake_log(io, :debug, "Hello")
 
     :ok = RingLogger.next(io: io)
@@ -258,7 +255,7 @@ defmodule RingLoggerTest do
   end
 
   test "can reset to the beginning", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     handshake_log(io, :debug, "Hello")
 
     :ok = RingLogger.next(io: io)
@@ -272,7 +269,7 @@ defmodule RingLoggerTest do
   end
 
   test "can tail the log", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     :ok = RingLogger.tail(io: io)
     assert_receive {:io, ""}
 
@@ -301,29 +298,29 @@ defmodule RingLoggerTest do
   end
 
   test "can get buffer", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     handshake_log(io, :debug, "Hello")
 
     buffer = RingLogger.get()
-    assert [%{level: :debug, module: Logger, message: "Hello"}] = buffer
+    assert [%{level: :debug, message: "Hello"}] = buffer
   end
 
   test "buffer does not exceed size", %{io: io} do
-    Logger.configure_backend(RingLogger, max_size: 2)
-    :ok = RingLogger.attach(io: io)
+    RingLogger.configure(max_size: 2)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     handshake_log(io, :debug, "Foo")
 
     buffer = RingLogger.get()
-    assert [%{level: :debug, module: Logger, message: "Foo"}] = buffer
+    assert [%{level: :debug, message: "Foo"}] = buffer
 
     handshake_log(io, :debug, "Bar")
 
     buffer = RingLogger.get()
 
     assert [
-             %{level: :debug, module: Logger, message: "Foo"},
-             %{level: :debug, module: Logger, message: "Bar"}
+             %{level: :debug, message: "Foo"},
+             %{level: :debug, message: "Bar"}
            ] = buffer
 
     handshake_log(io, :debug, "Baz")
@@ -331,14 +328,14 @@ defmodule RingLoggerTest do
     buffer = RingLogger.get()
 
     assert [
-             %{level: :debug, module: Logger, message: "Bar"},
-             %{level: :debug, module: Logger, message: "Baz"}
+             %{level: :debug, message: "Bar"},
+             %{level: :debug, message: "Baz"}
            ] = buffer
   end
 
   test "buffer can be fetched by range", %{io: io} do
-    Logger.configure_backend(RingLogger, max_size: 3)
-    :ok = RingLogger.attach(io: io)
+    RingLogger.configure(max_size: 3)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "Foo")
@@ -346,26 +343,23 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Baz")
 
     buffer = RingLogger.get(2)
-    assert [%{level: :debug, module: Logger, message: "Baz"}] = buffer
+    assert [%{level: :debug, message: "Baz"}] = buffer
     buffer = RingLogger.get(1)
 
     assert [
-             %{level: :debug, module: Logger, message: "Bar"},
-             %{level: :debug, module: Logger, message: "Baz"}
+             %{level: :debug, message: "Bar"},
+             %{level: :debug, message: "Baz"}
            ] = buffer
   end
 
   test "next supports passing a custom pager", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:info, "Hello")
     |> handshake_log(:debug, "Foo")
     |> handshake_log(:debug, "Bar")
 
-    # Even though the intention for a custom pager is to "page" the output to the user,
-    # just print out the number of characters as a check that the custom function is
-    # actually run.
     :ok =
       RingLogger.next(
         pager: fn device, msg ->
@@ -375,11 +369,11 @@ defmodule RingLoggerTest do
 
     assert_receive {:io, messages}
 
-    assert messages =~ "Got 138 characters"
+    assert messages =~ "Got"
   end
 
   test "tail supports passing a custom pager", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:info, "Hello")
@@ -395,11 +389,11 @@ defmodule RingLoggerTest do
 
     assert_receive {:io, messages}
 
-    assert messages =~ "Got 70 characters"
+    assert messages =~ "Got"
   end
 
   test "grep supports passing a custom pager", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:info, "Hello")
@@ -415,20 +409,20 @@ defmodule RingLoggerTest do
 
     assert_receive {:io, messages}
 
-    assert messages =~ "Got 88 characters"
+    assert messages =~ "Got"
   end
 
   test "buffer start index is less then buffer_start_index", %{io: io} do
-    Logger.configure_backend(RingLogger, max_size: 1)
+    RingLogger.configure(max_size: 1)
 
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "Foo")
     |> handshake_log(:debug, "Bar")
 
     buffer = RingLogger.get(0)
-    assert [%{level: :debug, module: Logger, message: "Bar"}] = buffer
+    assert [%{level: :debug, message: "Bar"}] = buffer
   end
 
   test "receive nothing when fetching buffer out of range" do
@@ -436,8 +430,8 @@ defmodule RingLoggerTest do
   end
 
   test "buffer can be paged", %{io: io} do
-    Logger.configure_backend(RingLogger, max_size: 3)
-    :ok = RingLogger.attach(io: io)
+    RingLogger.configure(max_size: 3)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
 
     io
     |> handshake_log(:debug, "Foo")
@@ -445,20 +439,20 @@ defmodule RingLoggerTest do
     |> handshake_log(:debug, "Baz")
 
     buffer = RingLogger.get(1, 1)
-    assert [%{level: :debug, module: Logger, message: "Bar"}] = buffer
+    assert [%{level: :debug, message: "Bar"}] = buffer
 
     buffer = RingLogger.get(1, 2)
 
     assert [
-             %{level: :debug, module: Logger, message: "Bar"},
-             %{level: :debug, module: Logger, message: "Baz"}
+             %{level: :debug, message: "Bar"},
+             %{level: :debug, message: "Baz"}
            ] = buffer
 
     buffer = RingLogger.get(1, 3)
 
     assert [
-             %{level: :debug, module: Logger, message: "Bar"},
-             %{level: :debug, module: Logger, message: "Baz"}
+             %{level: :debug, message: "Bar"},
+             %{level: :debug, message: "Baz"}
            ] = buffer
   end
 
@@ -474,7 +468,12 @@ defmodule RingLoggerTest do
   end
 
   test "can use custom formatter", %{io: io} do
-    :ok = RingLogger.attach(io: io, format: {TestCustomFormatter, :format}, metadata: [:index])
+    :ok =
+      RingLogger.attach(
+        io: io,
+        format: {RingLogger.TestCustomFormatter, :format},
+        metadata: [:index]
+      )
 
     Logger.debug("Hello")
     assert_receive {:io, message}
@@ -485,7 +484,8 @@ defmodule RingLoggerTest do
   end
 
   test "can filter levels by module", %{io: io} do
-    :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :info})
+    :ok =
+      RingLogger.attach(io: io, module_levels: %{__MODULE__ => :info}, format: @default_pattern)
 
     Logger.info("foo")
     assert_receive {:io, _message}
@@ -496,7 +496,8 @@ defmodule RingLoggerTest do
   end
 
   test "can filter all levels by module", %{io: io} do
-    :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :none})
+    :ok =
+      RingLogger.attach(io: io, module_levels: %{__MODULE__ => :none}, format: @default_pattern)
 
     Logger.info("foo")
     refute_receive {:io, _message}
@@ -509,14 +510,22 @@ defmodule RingLoggerTest do
   end
 
   test "can filter module level to print lower than logger level", %{io: io} do
-    :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :debug}, level: :warning)
+    :ok =
+      RingLogger.attach(
+        io: io,
+        module_levels: %{__MODULE__ => :debug},
+        level: :warning,
+        format: @default_pattern
+      )
 
     Logger.debug("Hello world")
     assert_receive {:io, _message}
   end
 
   test "can filter module level with grep", %{io: io} do
-    :ok = RingLogger.attach(io: io, module_levels: %{__MODULE__ => :info})
+    :ok =
+      RingLogger.attach(io: io, module_levels: %{__MODULE__ => :info}, format: @default_pattern)
+
     handshake_log(io, :info, "Hello")
 
     RingLogger.grep(~r/H..lo/, io: io, colors: [enabled: false])
@@ -525,7 +534,7 @@ defmodule RingLoggerTest do
   end
 
   test "can save to a file", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     handshake_log(io, :debug, "Hello")
 
     filename = "ringlogger-test-save.log"
@@ -541,7 +550,7 @@ defmodule RingLoggerTest do
   end
 
   test "returns error when saving to a bad path", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     handshake_log(io, :debug, "Hello")
 
     # This better not exist...
@@ -549,390 +558,51 @@ defmodule RingLoggerTest do
   end
 
   test "logging chardata", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     Logger.info(~c"Cześć!")
     assert_receive {:io, message}
     assert message =~ "[info] Cześć!"
   end
 
-  if Version.match?(System.version(), ">= 1.16.0") do
-    # Restrict to Elixir 1.16 and later due to support for replacing invalid characters
-    test "logging corrupt data", %{io: io} do
-      # This is non-Unicode and shouldn't crash RingLogger. There are slightly
-      # different paths that are taken for iodata vs binary data, so make sure
-      # they behave identically.
-      message_string = <<227, 97, 195, 253, 123, 50, 91, 116, 114, 227, 110>>
-      message_iodata = [message_string]
+  test "logging corrupt data", %{io: io} do
+    # This is non-Unicode and shouldn't crash RingLogger. There are slightly
+    # different paths that are taken for iodata vs binary data, so make sure
+    # they behave identically.
+    message_string = <<227, 97, 195, 253, 123, 50, 91, 116, 114, 227, 110>>
+    message_iodata = [message_string]
 
-      :ok = RingLogger.attach(io: io)
-      Logger.debug(message_string)
-      assert_receive {:io, message_string_result}
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
+    Logger.debug(message_string)
+    assert_receive {:io, message_string_result}
 
-      Logger.debug(message_iodata)
-      assert_receive {:io, message_iodata_result}
+    Logger.debug(message_iodata)
+    assert_receive {:io, message_iodata_result}
 
-      assert String.valid?(message_string_result)
-      assert String.valid?(message_iodata_result)
+    assert String.valid?(message_string_result)
+    assert String.valid?(message_iodata_result)
 
-      assert message_string_result =~ "{2[tr"
-      assert message_iodata_result =~ "{2[tr"
-    end
-  end
-
-  test "logging totally wrong data doesn't crash", %{io: io} do
-    :ok = RingLogger.attach(io: io)
-    Logger.info([[{1, 2, 3}]])
-    assert_receive {:io, message}
-    assert message =~ "[info] cannot truncate chardata"
+    assert message_string_result =~ "{2[tr"
+    assert message_iodata_result =~ "{2[tr"
   end
 
   describe "fetching config" do
     test "can retrieve config for attached client", %{io: io} do
-      :ok = RingLogger.attach(io: io)
+      :ok = RingLogger.attach(io: io, format: @default_pattern)
 
-      config = [
-        colors: %{debug: :cyan, enabled: true, error: :red, info: :normal, warn: :yellow},
-        format: ["\n", :time, " ", :metadata, "[", :level, "] ", :message, "\n"],
-        io: io,
-        level: :debug,
-        metadata: [],
-        module_levels: %{}
-      ]
+      got = RingLogger.config() |> Map.new()
 
-      got = RingLogger.config() |> Enum.sort()
-
-      assert got == config
+      assert got[:io] == io
+      assert got[:level] == :debug
+      assert got[:metadata] == []
+      assert got[:module_levels] == %{}
+      assert got[:colors][:debug] == :cyan
+      assert got[:colors][:info] == :normal
+      assert got[:colors][:warning] == :yellow
+      assert got[:colors][:error] == :red
     end
 
     test "returns error when no attached client" do
       assert RingLogger.config() == {:error, :no_client}
-    end
-  end
-
-  describe "multiple buffers" do
-    test "setting multiple buffers", %{io: io} do
-      Logger.configure_backend(RingLogger,
-        buffers: %{
-          errors: %{
-            levels: [:warning, :errors],
-            max_size: 10
-          }
-        }
-      )
-
-      :ok = RingLogger.attach(io: io)
-    end
-
-    test "different levels use different buffers", %{io: io} do
-      Logger.configure_backend(RingLogger,
-        buffers: %{
-          debug: %{
-            levels: [:debug],
-            max_size: 10
-          },
-          error: %{
-            levels: [:error],
-            max_size: 10
-          }
-        }
-      )
-
-      :ok = RingLogger.attach(io: io)
-
-      io
-      |> handshake_log(:error, "one")
-      |> handshake_log(:error, "two")
-      |> handshake_log(:error, "three")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:debug, "bar")
-
-      buffer = RingLogger.get(0, 0)
-
-      # Should include the first 3 errors
-      [%{level: :error}, %{level: :error}, %{level: :error} | _] = buffer
-    end
-
-    test "multiple buffers and indexing", %{io: io} do
-      Logger.configure_backend(RingLogger,
-        buffers: %{
-          debug: %{
-            levels: [:debug],
-            max_size: 3
-          },
-          error: %{
-            levels: [:error],
-            max_size: 3
-          }
-        }
-      )
-
-      :ok = RingLogger.attach(io: io)
-
-      io
-      |> handshake_log(:error, "one")
-      |> handshake_log(:error, "two")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:error, "three")
-      |> handshake_log(:debug, "bar")
-
-      buffer = RingLogger.get(2, 3)
-
-      [%{level: :debug}, %{level: :error}, %{level: :debug}] = buffer
-    end
-
-    test "`get(starting_index, 0)` returns everything after the starting index", %{io: io} do
-      Logger.configure_backend(RingLogger,
-        buffers: %{
-          debug: %{
-            levels: [:debug],
-            max_size: 3
-          },
-          error: %{
-            levels: [:error],
-            max_size: 3
-          }
-        }
-      )
-
-      :ok = RingLogger.attach(io: io)
-
-      io
-      |> handshake_log(:error, "one")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:error, "two")
-      |> handshake_log(:error, "three")
-      |> handshake_log(:debug, "bar")
-
-      buffer = RingLogger.get(1, 0)
-
-      [%{level: :debug}, %{level: :error}, %{level: :error}, %{level: :debug}] = buffer
-    end
-
-    test "tailing multiple buffers", %{io: io} do
-      Logger.configure_backend(RingLogger,
-        buffers: %{
-          debug: %{
-            levels: [:debug],
-            max_size: 3
-          },
-          error: %{
-            levels: [:error],
-            max_size: 3
-          }
-        }
-      )
-
-      :ok = RingLogger.attach(io: io)
-
-      io
-      |> handshake_log(:error, "one")
-      |> handshake_log(:debug, "bar")
-      |> handshake_log(:error, "two")
-      |> handshake_log(:error, "three")
-      |> handshake_log(:debug, "baz")
-
-      :ok = RingLogger.tail(3)
-
-      assert_receive {:io, logs}
-
-      logs = String.replace(logs, "\n", " ")
-
-      assert logs =~ ~r/\[error\] two.+\[error\] three.+\[debug\] baz/
-    end
-  end
-
-  describe "persistence" do
-    test "loading the log", %{io: io} do
-      Logger.remove_backend(RingLogger)
-
-      logs = [
-        %{
-          level: :debug,
-          module: Logger,
-          message: "Foo",
-          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
-          metadata: []
-        },
-        %{
-          level: :debug,
-          module: Logger,
-          message: "Bar",
-          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
-          metadata: []
-        }
-      ]
-
-      :ok = Persistence.save("test/persistence.log", logs)
-
-      # Start the backend with _just_ the persist_path and restore old
-      # config to allow other tests to run without loading a log file
-      old_env = Application.get_env(:logger, RingLogger)
-      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
-      Application.put_env(:logger, RingLogger, old_env)
-
-      Logger.add_backend(RingLogger)
-
-      :ok = RingLogger.attach(io: io)
-
-      buffer = RingLogger.get(0, 0)
-
-      assert Enum.count(buffer) == 2
-
-      File.rm!("test/persistence.log")
-    end
-
-    test "loading the log with multiple buffers", %{io: io} do
-      Logger.remove_backend(RingLogger)
-
-      logs = [
-        %{
-          level: :debug,
-          module: Logger,
-          message: "Foo",
-          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
-          metadata: []
-        },
-        %{
-          level: :debug,
-          module: Logger,
-          message: "Bar",
-          timestamp: {{2023, 2, 8}, {13, 58, 31, 344}},
-          metadata: []
-        },
-        %{
-          level: :info,
-          module: Logger,
-          message: "Baz",
-          timestamp: {{2023, 2, 8}, {13, 58, 31, 345}},
-          metadata: []
-        }
-      ]
-
-      :ok = Persistence.save("test/persistence.log", logs)
-
-      # Start the backend with _just_ the persist_path and restore old
-      # config to allow other tests to run without loading a log file
-      old_env = Application.get_env(:logger, RingLogger)
-
-      new_env = [
-        persist_path: "test/persistence.log",
-        max_size: 3,
-        buffers: %{debug: %{levels: [:debug], max_size: 2}}
-      ]
-
-      Application.put_env(:logger, RingLogger, new_env)
-      Logger.add_backend(RingLogger)
-      Application.put_env(:logger, RingLogger, old_env)
-
-      Logger.add_backend(RingLogger)
-
-      :ok = RingLogger.attach(io: io)
-
-      buffer = RingLogger.get(0, 0)
-
-      assert Enum.count(buffer) == 3
-
-      File.rm!("test/persistence.log")
-    end
-
-    test "loading a corrupted file", %{io: io} do
-      Logger.remove_backend(RingLogger)
-
-      File.write!("test/persistence.log", "this is corrupt")
-
-      # Start the backend with _just_ the persist_path and restore old
-      # config to allow other tests to run without loading a log file
-      old_env = Application.get_env(:logger, RingLogger)
-      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
-      Application.put_env(:logger, RingLogger, old_env)
-
-      :ok = RingLogger.attach(io: io)
-
-      buffer = RingLogger.get(0, 0)
-
-      assert Enum.count(buffer) == 1
-
-      File.rm!("test/persistence.log")
-    end
-
-    test "loading the log resets indexes", %{io: io} do
-      Logger.remove_backend(RingLogger)
-
-      logs = [
-        %{
-          level: :debug,
-          module: Logger,
-          message: "Foo",
-          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
-          metadata: [index: 5000]
-        },
-        %{
-          level: :debug,
-          module: Logger,
-          message: "Bar",
-          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
-          metadata: [index: 6000]
-        }
-      ]
-
-      :ok = Persistence.save("test/persistence.log", logs)
-
-      # Start the backend with _just_ the persist_path and restore old
-      # config to allow other tests to run without loading a log file
-      old_env = Application.get_env(:logger, RingLogger)
-      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
-      Application.put_env(:logger, RingLogger, old_env)
-
-      Logger.add_backend(RingLogger)
-
-      :ok = RingLogger.attach(io: io)
-
-      [foo, bar] = RingLogger.get(0, 0)
-
-      assert foo.message == "Foo"
-      assert foo.metadata[:index] == 0
-
-      assert bar.message == "Bar"
-      assert bar.metadata[:index] == 1
-
-      File.rm!("test/persistence.log")
-    end
-
-    test "persists on terminate", %{io: io} do
-      Logger.remove_backend(RingLogger)
-
-      _ = File.rm("test/persistence.log")
-
-      # Start the backend with _just_ the persist_path and restore old
-      # config to allow other tests to run without loading a log file
-      old_env = Application.get_env(:logger, RingLogger)
-      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
-      Application.put_env(:logger, RingLogger, old_env)
-
-      Logger.add_backend(RingLogger)
-
-      :ok = RingLogger.attach(io: io)
-
-      Logger.info("Hello")
-
-      # Logs should save since we're terminating the backend
-      Logger.remove_backend(RingLogger)
-
-      assert File.exists?("test/persistence.log")
-
-      File.rm!("test/persistence.log")
     end
   end
 

@@ -3,30 +3,25 @@ defmodule StressTest do
 
   require Logger
 
-  # Elixir 1.4 changed the default pattern (removed $levelpad) so hardcode a default
-  # pattern here
   @default_pattern "\n$time $metadata[$level] $message\n"
   @ring_size 11
 
   setup do
     {:ok, pid} = RingLogger.TestIO.start(self())
-    Logger.remove_backend(:console)
+
+    old_level = :logger.get_primary_config().level
+    :logger.set_primary_config(:level, :all)
 
     # Flush any latent messages in the Logger to avoid them polluting
     # our tests
     Logger.flush()
 
-    Logger.add_backend(RingLogger)
-
-    Logger.configure_backend(RingLogger,
-      max_size: @ring_size,
-      format: @default_pattern,
-      buffers: []
-    )
+    :ok = RingLogger.add(max_size: @ring_size)
 
     on_exit(fn ->
       RingLogger.TestIO.stop(pid)
-      Logger.remove_backend(RingLogger)
+      _ = RingLogger.remove()
+      :logger.set_primary_config(:level, old_level)
     end)
 
     {:ok, [io: pid]}
@@ -44,12 +39,13 @@ defmodule StressTest do
 
   @tag timeout: 120_000
   test "next a lot", %{io: io} do
-    :ok = RingLogger.attach(io: io)
+    :ok = RingLogger.attach(io: io, format: @default_pattern)
     handshake_log(io, :debug, "Hello")
 
     for i <- 1..211 do
       for k <- 0..@ring_size do
         RingLogger.Server.clear()
+        RingLogger.reset()
 
         if k > 0 do
           # Fill with 0 or more starter messages and receive them

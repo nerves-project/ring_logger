@@ -125,27 +125,28 @@ defmodule RingLogger.Autoclient do
   defp check_server_started() do
     if Process.whereis(RingLogger.Server) == nil do
       IO.puts("""
-      The RingLogger backend isn't running. Going to try starting it, but don't
+      The RingLogger handler isn't running. Going to try starting it, but don't
       expect any log entries before now.
 
       To start it in the future, add the following to your config.exs:
 
-        config :logger, backends: [RingLogger]
+        config :logger, :handlers,
+          ring_logger: %{module: RingLogger.Handler, config: %{max_size: 1024}}
 
       or start it manually:
 
-        iex> Logger.add_backend(RingLogger)
+        iex> RingLogger.add()
       """)
 
-      try_adding_backend()
+      try_adding_handler()
     else
       :ok
     end
   end
 
-  defp try_adding_backend() do
-    case Logger.add_backend(RingLogger) do
-      {:ok, _} ->
+  defp try_adding_handler() do
+    case RingLogger.add() do
+      :ok ->
         :ok
 
       error ->

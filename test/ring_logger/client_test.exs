@@ -4,15 +4,9 @@ defmodule RingLogger.Client.Test do
 
   setup do
     {:ok, client} = Client.start_link()
-    # Elixir 1.4 changed the default pattern (removed $levelpad) so hardcode a default
-    # pattern here
+    # Hardcode a default pattern
     Client.configure(client, format: "\n$time $metadata[$level] $message\n")
     {:ok, %{client: client}}
-  end
-
-  setup(context) do
-    RingLogger.ApplicationEnvHelpers.with_application_env(context, &on_exit/1)
-    :ok
   end
 
   describe "configure a client at runtime" do
@@ -25,7 +19,7 @@ defmodule RingLogger.Client.Test do
       colors = %{
         debug: :red,
         info: :normal,
-        warn: :cyan,
+        warning: :cyan,
         error: :yellow,
         enabled: IO.ANSI.enabled?()
       }
@@ -86,41 +80,15 @@ defmodule RingLogger.Client.Test do
   end
 
   test "can retrieve configuration", %{client: client} do
-    config = [
-      colors: %{debug: :cyan, enabled: true, error: :red, info: :normal, warn: :yellow},
-      format: ["\n", :time, " ", :metadata, "[", :level, "] ", :message, "\n"],
-      io: :stdio,
-      level: :debug,
-      metadata: [],
-      module_levels: %{}
-    ]
-
     got = Client.config(client) |> Enum.sort()
 
-    assert got == config
-  end
-
-  @tag application_envs: [ring_logger: [colors: %{debug: :green, error: :blue}]]
-  test "warns on deprecated config" do
-    io_warning =
-      ExUnit.CaptureIO.capture_io(:stderr, fn ->
-        Client.start_link()
-      end)
-
-    assert io_warning =~ ~r/:ring_logger.*is deprecated/
-  end
-
-  @tag application_envs: [
-         ring_logger: [colors: %{debug: :green, error: :blue}],
-         logger: [{RingLogger, [colors: %{debug: :cyan}]}]
-       ]
-  test "non-deprecated config override deprecated config" do
-    # Note: `error: :blue` in configuration will be overwritten because maps are not deep merged
-    ExUnit.CaptureIO.capture_io(:stderr, fn ->
-      {:ok, client} = Client.start_link()
-
-      assert %{debug: :cyan} = :sys.get_state(client).colors
-      assert :sys.get_state(client).level == :debug
-    end)
+    assert got[:io] == :stdio
+    assert got[:level] == :debug
+    assert got[:metadata] == []
+    assert got[:module_levels] == %{}
+    assert got[:colors][:debug] == :cyan
+    assert got[:colors][:info] == :normal
+    assert got[:colors][:warning] == :yellow
+    assert got[:colors][:error] == :red
   end
 end

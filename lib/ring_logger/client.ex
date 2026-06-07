@@ -1,6 +1,10 @@
 defmodule RingLogger.Client do
   @moduledoc """
-  Interact with the RingLogger
+  Interact with the RingLogger.
+
+  This module provides a GenServer that can be attached to the RingLogger
+  to receive log messages in real-time, and provides formatting, filtering,
+  and paging functionality.
   """
   use GenServer
 
@@ -12,7 +16,7 @@ defmodule RingLogger.Client do
             colors: %{
               debug: :cyan,
               info: :normal,
-              warn: :yellow,
+              warning: :yellow,
               error: :red,
               enabled: IO.ANSI.enabled?()
             },
@@ -23,8 +27,7 @@ defmodule RingLogger.Client do
             module_levels: %{}
 
   @doc """
-  Start up a client GenServer. Except for just getting the contents of the ring buffer, you'll
-  need to create one of these. See `configure/2` for information on options.
+  Start up a client GenServer.
   """
   @spec start_link(RingLogger.client_options()) :: GenServer.on_start()
   def start_link(config \\ []) do
@@ -178,7 +181,7 @@ defmodule RingLogger.Client do
 
   * `:pager` - an optional 2-arity function that takes an IO device and what to print
   * `:before` - Number of lines before the match to include
-  * `:after` - NUmber of lines after the match to include
+  * `:after` - Number of lines after the match to include
   """
   @spec grep(GenServer.server(), String.t() | Regex.t(), RingLogger.client_options()) ::
           :ok | {:error, term()}
@@ -237,7 +240,6 @@ defmodule RingLogger.Client do
   def handle_call(:next, _from, state) do
     case Server.get(state.index, 0) do
       [] ->
-        # No messages
         {:reply, {state.io, "No new messages.\n"}, state}
 
       messages ->
@@ -362,35 +364,8 @@ defmodule RingLogger.Client do
   end
 
   defp build_defaults() do
-    deprecated_defaults = Application.get_all_env(:ring_logger)
-
-    defaults =
-      Application.get_env(:logger, RingLogger, [])
-      |> Keyword.put_new(:colors, [])
-
-    merge_deprecated_defaults(deprecated_defaults, defaults)
-  end
-
-  defp merge_deprecated_defaults([], defaults), do: defaults
-
-  defp merge_deprecated_defaults(deprecated_defaults, defaults) do
-    message = """
-    Setting RingLogger configuration under `:ring_logger` is deprecated. Instead configuration should be set under :logger, RingLogger
-
-    In your config.exs or other configuration file change:
-
-        config :ring_logger,
-          <configurations>
-
-    To:
-
-        config :logger, RingLogger,
-          <configurations>
-    """
-
-    IO.warn(message)
-
-    Keyword.merge(deprecated_defaults, defaults)
+    Application.get_env(:logger, RingLogger, [])
+    |> Keyword.put_new(:colors, [])
   end
 
   defp configure_option({:colors, colors}) do
@@ -414,7 +389,7 @@ defmodule RingLogger.Client do
     %{
       debug: Keyword.get(colors, :debug, :cyan),
       info: Keyword.get(colors, :info, :normal),
-      warn: Keyword.get(colors, :warn, :yellow),
+      warning: Keyword.get(colors, :warning, :yellow),
       error: Keyword.get(colors, :error, :red),
       enabled: Keyword.get(colors, :enabled, IO.ANSI.enabled?())
     }
@@ -439,7 +414,6 @@ defmodule RingLogger.Client do
 
   defp meet_level?(_lvl, nil), do: true
   defp meet_level?(_lvl, :none), do: false
-  defp meet_level?(:warn, min), do: Logger.compare_levels(:warning, min) != :lt
   defp meet_level?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
 
   defp take_metadata(metadata, :all), do: metadata
