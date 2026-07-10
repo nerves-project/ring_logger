@@ -2,6 +2,11 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.11.6
+
+* Changes
+  * Support passing initial commands to `RingLogger.viewer`. E.g., `Ringlogger.viewer("a application1")`
+
 ## v0.11.5
 
 * Changes
