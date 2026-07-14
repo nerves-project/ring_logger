@@ -405,16 +405,23 @@ defmodule RingLogger.Client do
     {:format, configure_formatter(format)}
   end
 
+  defp configure_option({:level, level}) do
+    {:level, normalize_level(level)}
+  end
+
   defp configure_option(opt), do: opt
 
   defp configure_metadata(:all), do: :all
   defp configure_metadata(metadata), do: Enum.reverse(metadata)
 
   defp configure_colors(colors) when is_list(colors) do
+    warning_color = Keyword.get(colors, :warning, Keyword.get(colors, :warn, :yellow))
+
     %{
       debug: Keyword.get(colors, :debug, :cyan),
       info: Keyword.get(colors, :info, :normal),
-      warn: Keyword.get(colors, :warn, :yellow),
+      warn: warning_color,
+      warning: warning_color,
       error: Keyword.get(colors, :error, :red),
       enabled: Keyword.get(colors, :enabled, IO.ANSI.enabled?())
     }
@@ -441,6 +448,11 @@ defmodule RingLogger.Client do
   defp meet_level?(_lvl, :none), do: false
   defp meet_level?(:warn, min), do: Logger.compare_levels(:warning, min) != :lt
   defp meet_level?(lvl, min), do: Logger.compare_levels(lvl, min) != :lt
+
+  # Elixir's Logger deprecated :warn in favor of :warning. Accept :warn from
+  # legacy configuration, but only compare with current level atoms.
+  defp normalize_level(:warn), do: :warning
+  defp normalize_level(level), do: level
 
   defp take_metadata(metadata, :all), do: metadata
 
@@ -472,6 +484,7 @@ defmodule RingLogger.Client do
 
     Keyword.get(config, :application_levels, %{})
     |> Enum.reduce(module_levels, &add_module_levels_for_application/2)
+    |> Map.new(fn {module, level} -> {module, normalize_level(level)} end)
   end
 
   defp add_module_levels_for_application({app, level}, module_levels) do
