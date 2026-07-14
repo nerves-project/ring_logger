@@ -308,6 +308,24 @@ defmodule RingLoggerTest do
     assert [%{level: :debug, module: Logger, message: "Hello"}] = buffer
   end
 
+  test "warning messages are stored with the :warning level", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+    handshake_log(io, :warning, "Hello")
+
+    buffer = RingLogger.get()
+    assert [%{level: :warning, module: Logger, message: "Hello"}] = buffer
+  end
+
+  test "legacy :warn events are normalized to :warning", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    # Simulate the :warn level that logger_backends delivers for warnings
+    RingLogger.Server.log(:warn, {Logger, "legacy warn", {{2023, 2, 8}, {13, 58, 31, 343}}, []})
+
+    buffer = RingLogger.get()
+    assert [%{level: :warning, module: Logger, message: "legacy warn"}] = buffer
+  end
+
   test "buffer does not exceed size", %{io: io} do
     Logger.configure_backend(RingLogger, max_size: 2)
     :ok = RingLogger.attach(io: io)
@@ -591,7 +609,14 @@ defmodule RingLoggerTest do
       :ok = RingLogger.attach(io: io)
 
       config = [
-        colors: %{debug: :cyan, enabled: true, error: :red, info: :normal, warn: :yellow},
+        colors: %{
+          debug: :cyan,
+          enabled: true,
+          error: :red,
+          info: :normal,
+          warn: :yellow,
+          warning: :yellow
+        },
         format: ["\n", :time, " ", :metadata, "[", :level, "] ", :message, "\n"],
         io: io,
         level: :debug,
@@ -621,6 +646,29 @@ defmodule RingLoggerTest do
       )
 
       :ok = RingLogger.attach(io: io)
+    end
+
+    test "buffers configured with legacy :warn capture :warning entries", %{io: io} do
+      Logger.configure_backend(RingLogger,
+        buffers: %{
+          warnings: %{
+            levels: [:warn],
+            max_size: 10
+          }
+        }
+      )
+
+      :ok = RingLogger.attach(io: io)
+
+      io = handshake_log(io, :warning, "wumbo")
+
+      # Flood the default buffer (max_size: 10) with debug messages. The
+      # warning entry must survive because it routes to the warnings buffer.
+      Enum.reduce(1..10, io, fn _, io -> handshake_log(io, :debug, "noise") end)
+
+      buffer = RingLogger.get(0, 0)
+
+      assert [%{level: :warning, message: "wumbo"} | _] = buffer
     end
 
     test "different levels use different buffers", %{io: io} do
@@ -750,6 +798,35 @@ defmodule RingLoggerTest do
   end
 
   describe "persistence" do
+    test "loading a log with legacy :warn entries normalizes them to :warning", %{io: io} do
+      Logger.remove_backend(RingLogger)
+
+      logs = [
+        %{
+          level: :warn,
+          module: Logger,
+          message: "Old warning",
+          timestamp: {{2023, 2, 8}, {13, 58, 31, 343}},
+          metadata: []
+        }
+      ]
+
+      :ok = Persistence.save("test/persistence.log", logs)
+
+      # Start the backend with _just_ the persist_path and restore old
+      # config to allow other tests to run without loading a log file
+      old_env = Application.get_env(:logger, RingLogger)
+      Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
+      Logger.add_backend(RingLogger)
+      Application.put_env(:logger, RingLogger, old_env)
+
+      :ok = RingLogger.attach(io: io)
+
+      assert [%{level: :warning, message: "Old warning"}] = RingLogger.get(0, 0)
+
+      File.rm!("test/persistence.log")
+    end
+
     test "loading the log", %{io: io} do
       Logger.remove_backend(RingLogger)
 

@@ -286,7 +286,7 @@ defmodule RingLogger.Server do
     index = state.index
 
     log_entry = %{
-      level: level,
+      level: normalize_level(level),
       module: module,
       message: message,
       timestamp: timestamp,
@@ -330,7 +330,7 @@ defmodule RingLogger.Server do
     Enum.map(buffers, fn {name, config} ->
       %Buffer{
         name: name,
-        levels: config[:levels],
+        levels: Enum.map(config[:levels], &normalize_level/1),
         max_size: config[:max_size],
         circular_buffer: CircularBuffer.new(config[:max_size])
       }
@@ -344,7 +344,12 @@ defmodule RingLogger.Server do
           logs
           |> Enum.with_index()
           |> Enum.reduce(state, fn {log_entry, index}, state ->
-            log_entry = %{log_entry | metadata: Keyword.put(log_entry.metadata, :index, index)}
+            log_entry = %{
+              log_entry
+              | level: normalize_level(log_entry.level),
+                metadata: Keyword.put(log_entry.metadata, :index, index)
+            }
+
             insert_log(state, log_entry)
           end)
 
@@ -358,7 +363,7 @@ defmodule RingLogger.Server do
           :calendar.system_time_to_universal_time(timestamp, :microsecond)
 
         log_entry = %{
-          level: :warn,
+          level: :warning,
           module: Logger,
           message: "RingLogger could not load the persistence file, it is corrupt",
           timestamp: {date, {hours, minutes, seconds, div(micro, 1000)}},
@@ -373,4 +378,10 @@ defmodule RingLogger.Server do
         state
     end
   end
+
+  # Elixir's Logger deprecated :warn in favor of :warning, but the
+  # logger_backends translation layer and old persisted log files still
+  # deliver :warn. Normalize so buffers only ever hold current level atoms.
+  defp normalize_level(:warn), do: :warning
+  defp normalize_level(level), do: level
 end
