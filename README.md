@@ -185,11 +185,11 @@ Also, it allows for filtering the whole project on a higher level, but a
 particular module, or a subset of modules, to log at a lower level like so:
 
 ```elixir
-iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warn)
+iex> RingLogger.attach(module_levels: %{MyModule => :debug}, level: :warning)
 ```
 
 In the example above log messages at the `:debug` level will be logged, but
-every other module will be logging at the `:warn` level. You can also turn off a
+every other module will be logging at the `:warning` level. You can also turn off a
 module's logging completely by specifying `:none`.
 
 Additionally, you can specify the same options at the application level to

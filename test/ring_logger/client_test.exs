@@ -21,6 +21,11 @@ defmodule RingLogger.Client.Test do
       assert :error == :sys.get_state(client).level
     end
 
+    test "configure legacy :warn level is normalized to :warning", %{client: client} do
+      Client.configure(client, level: :warn)
+      assert :warning == :sys.get_state(client).level
+    end
+
     test "configure colors", %{client: client} do
       colors = %{
         debug: :red,
@@ -32,7 +37,8 @@ defmodule RingLogger.Client.Test do
 
       Client.configure(client, colors: colors)
 
-      assert colors == :sys.get_state(client).colors
+      # The legacy :warn color is used for both :warn and :warning entries
+      assert Map.put(colors, :warning, :cyan) == :sys.get_state(client).colors
     end
 
     test "configure metadata", %{client: client} do
@@ -63,6 +69,12 @@ defmodule RingLogger.Client.Test do
       assert :sys.get_state(client).module_levels == module_levels
     end
 
+    test "configures module_levels with legacy :warn normalized to :warning", %{client: client} do
+      Client.configure(client, module_levels: %{RingLogger => :warn})
+
+      assert :sys.get_state(client).module_levels == %{RingLogger => :warning}
+    end
+
     test "configures module_levels from application_levels", %{client: client} do
       Client.configure(client, application_levels: %{ring_logger: :debug})
 
@@ -87,7 +99,14 @@ defmodule RingLogger.Client.Test do
 
   test "can retrieve configuration", %{client: client} do
     config = [
-      colors: %{debug: :cyan, enabled: true, error: :red, info: :normal, warn: :yellow},
+      colors: %{
+        debug: :cyan,
+        enabled: true,
+        error: :red,
+        info: :normal,
+        warn: :yellow,
+        warning: :yellow
+      },
       format: ["\n", :time, " ", :metadata, "[", :level, "] ", :message, "\n"],
       io: :stdio,
       level: :debug,
