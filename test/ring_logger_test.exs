@@ -326,6 +326,31 @@ defmodule RingLoggerTest do
     assert [%{level: :warning, module: Logger, message: "legacy warn"}] = buffer
   end
 
+  test "entries keep their original level from :erl_level metadata", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+
+    # The backend translation layer collapses :notice to :info and :critical
+    # to :error, but preserves the original level in :erl_level metadata
+    timestamp = {{2023, 2, 8}, {13, 58, 31, 343}}
+    RingLogger.Server.log(:info, {Logger, "a notice", timestamp, [erl_level: :notice]})
+    RingLogger.Server.log(:error, {Logger, "a critical", timestamp, [erl_level: :critical]})
+
+    buffer = RingLogger.get()
+
+    assert [
+             %{level: :notice, message: "a notice"},
+             %{level: :critical, message: "a critical"}
+           ] = buffer
+  end
+
+  test "erlang-only levels survive the whole logging pipeline", %{io: io} do
+    :ok = RingLogger.attach(io: io)
+    handshake_log(io, :notice, "Attention")
+
+    buffer = RingLogger.get()
+    assert [%{level: :notice, module: Logger, message: "Attention"}] = buffer
+  end
+
   test "buffer does not exceed size", %{io: io} do
     Logger.configure_backend(RingLogger, max_size: 2)
     :ok = RingLogger.attach(io: io)
@@ -610,10 +635,14 @@ defmodule RingLoggerTest do
 
       config = [
         colors: %{
+          alert: :red,
+          critical: :red,
           debug: :cyan,
+          emergency: :red,
           enabled: true,
           error: :red,
           info: :normal,
+          notice: :normal,
           warn: :yellow,
           warning: :yellow
         },

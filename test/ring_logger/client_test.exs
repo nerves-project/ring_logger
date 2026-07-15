@@ -37,8 +37,30 @@ defmodule RingLogger.Client.Test do
 
       Client.configure(client, colors: colors)
 
-      # The legacy :warn color is used for both :warn and :warning entries
-      assert Map.put(colors, :warning, :cyan) == :sys.get_state(client).colors
+      # The legacy :warn color is used for both :warn and :warning entries;
+      # emergency/alert/critical default to the :error color and notice to
+      # the :info color
+      expected =
+        Map.merge(colors, %{
+          warning: :cyan,
+          emergency: :yellow,
+          alert: :yellow,
+          critical: :yellow,
+          notice: :normal
+        })
+
+      assert expected == :sys.get_state(client).colors
+    end
+
+    test "configure colors for erlang-only levels", %{client: client} do
+      Client.configure(client, colors: %{critical: :magenta, notice: :light_blue})
+
+      colors = :sys.get_state(client).colors
+      assert colors.critical == :magenta
+      assert colors.notice == :light_blue
+      # Unspecified erlang levels still follow the :error color default
+      assert colors.emergency == :red
+      assert colors.alert == :red
     end
 
     test "configure metadata", %{client: client} do
@@ -100,10 +122,14 @@ defmodule RingLogger.Client.Test do
   test "can retrieve configuration", %{client: client} do
     config = [
       colors: %{
+        alert: :red,
+        critical: :red,
         debug: :cyan,
+        emergency: :red,
         enabled: true,
         error: :red,
         info: :normal,
+        notice: :normal,
         warn: :yellow,
         warning: :yellow
       },

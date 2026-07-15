@@ -286,7 +286,7 @@ defmodule RingLogger.Server do
     index = state.index
 
     log_entry = %{
-      level: normalize_level(level),
+      level: entry_level(level, metadata),
       module: module,
       message: message,
       timestamp: timestamp,
@@ -377,6 +377,15 @@ defmodule RingLogger.Server do
       {:error, _reason} ->
         state
     end
+  end
+
+  # The Logger backend translation layer (core Elixir through 1.14,
+  # logger_backends afterwards) collapses erlang levels onto the legacy four
+  # backend levels (:debug/:info/:warn/:error) but preserves the original in
+  # :erl_level metadata. Prefer it so :notice, :critical, :alert, and
+  # :emergency entries keep their real level.
+  defp entry_level(level, metadata) do
+    metadata |> Keyword.get(:erl_level, level) |> normalize_level()
   end
 
   defp normalize_level(:warn), do: :warning
