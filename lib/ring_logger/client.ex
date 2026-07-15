@@ -415,12 +415,20 @@ defmodule RingLogger.Client do
   defp configure_metadata(metadata), do: Enum.reverse(metadata)
 
   defp configure_colors(colors) when is_list(colors) do
+    error_color = Keyword.get(colors, :error, :red)
+    info_color = Keyword.get(colors, :info, :normal)
+    warning_color = Keyword.get(colors, :warn, :yellow)
+
     %{
+      emergency: Keyword.get(colors, :emergency, error_color),
+      alert: Keyword.get(colors, :alert, error_color),
+      critical: Keyword.get(colors, :critical, error_color),
+      error: error_color,
+      warn: warning_color,
+      warning: warning_color,
+      notice: Keyword.get(colors, :notice, info_color),
+      info: info_color,
       debug: Keyword.get(colors, :debug, :cyan),
-      info: Keyword.get(colors, :info, :normal),
-      warn: Keyword.get(colors, :warn, :yellow),
-      warning: Keyword.get(colors, :warn, :yellow),
-      error: Keyword.get(colors, :error, :red),
       enabled: Keyword.get(colors, :enabled, IO.ANSI.enabled?())
     }
   end
