@@ -18,18 +18,18 @@ defmodule RingLoggerTest do
 
     # This next line is for Elixir 1.14 and earlier. Elixir 1.15 relies on the config.exs
     # to remove the console backend (err, default handler).
-    Logger.remove_backend(:console)
+    LoggerBackends.remove(:console)
 
     # Flush any latent messages in the Logger to avoid them polluting
     # our tests
     Logger.flush()
 
-    Logger.add_backend(RingLogger)
-    Logger.configure_backend(RingLogger, max_size: 10, format: @default_pattern, buffers: [])
+    LoggerBackends.add(RingLogger)
+    LoggerBackends.configure(RingLogger, max_size: 10, format: @default_pattern, buffers: [])
 
     on_exit(fn ->
       RingLogger.TestIO.stop(pid)
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
     end)
 
     {:ok, [io: pid]}
@@ -352,7 +352,7 @@ defmodule RingLoggerTest do
   end
 
   test "buffer does not exceed size", %{io: io} do
-    Logger.configure_backend(RingLogger, max_size: 2)
+    LoggerBackends.configure(RingLogger, max_size: 2)
     :ok = RingLogger.attach(io: io)
 
     handshake_log(io, :debug, "Foo")
@@ -380,7 +380,7 @@ defmodule RingLoggerTest do
   end
 
   test "buffer can be fetched by range", %{io: io} do
-    Logger.configure_backend(RingLogger, max_size: 3)
+    LoggerBackends.configure(RingLogger, max_size: 3)
     :ok = RingLogger.attach(io: io)
 
     io
@@ -462,7 +462,7 @@ defmodule RingLoggerTest do
   end
 
   test "buffer start index is less then buffer_start_index", %{io: io} do
-    Logger.configure_backend(RingLogger, max_size: 1)
+    LoggerBackends.configure(RingLogger, max_size: 1)
 
     :ok = RingLogger.attach(io: io)
 
@@ -479,7 +479,7 @@ defmodule RingLoggerTest do
   end
 
   test "buffer can be paged", %{io: io} do
-    Logger.configure_backend(RingLogger, max_size: 3)
+    LoggerBackends.configure(RingLogger, max_size: 3)
     :ok = RingLogger.attach(io: io)
 
     io
@@ -665,7 +665,7 @@ defmodule RingLoggerTest do
 
   describe "multiple buffers" do
     test "setting multiple buffers", %{io: io} do
-      Logger.configure_backend(RingLogger,
+      LoggerBackends.configure(RingLogger,
         buffers: %{
           errors: %{
             levels: [:warning, :errors],
@@ -678,7 +678,7 @@ defmodule RingLoggerTest do
     end
 
     test "buffers configured with legacy :warn capture :warning entries", %{io: io} do
-      Logger.configure_backend(RingLogger,
+      LoggerBackends.configure(RingLogger,
         buffers: %{
           warnings: %{
             levels: [:warn],
@@ -701,7 +701,7 @@ defmodule RingLoggerTest do
     end
 
     test "different levels use different buffers", %{io: io} do
-      Logger.configure_backend(RingLogger,
+      LoggerBackends.configure(RingLogger,
         buffers: %{
           debug: %{
             levels: [:debug],
@@ -738,7 +738,7 @@ defmodule RingLoggerTest do
     end
 
     test "multiple buffers and indexing", %{io: io} do
-      Logger.configure_backend(RingLogger,
+      LoggerBackends.configure(RingLogger,
         buffers: %{
           debug: %{
             levels: [:debug],
@@ -766,7 +766,7 @@ defmodule RingLoggerTest do
     end
 
     test "`get(starting_index, 0)` returns everything after the starting index", %{io: io} do
-      Logger.configure_backend(RingLogger,
+      LoggerBackends.configure(RingLogger,
         buffers: %{
           debug: %{
             levels: [:debug],
@@ -794,7 +794,7 @@ defmodule RingLoggerTest do
     end
 
     test "tailing multiple buffers", %{io: io} do
-      Logger.configure_backend(RingLogger,
+      LoggerBackends.configure(RingLogger,
         buffers: %{
           debug: %{
             levels: [:debug],
@@ -828,7 +828,7 @@ defmodule RingLoggerTest do
 
   describe "persistence" do
     test "loading a log with legacy :warn entries normalizes them to :warning", %{io: io} do
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
 
       logs = [
         %{
@@ -846,7 +846,7 @@ defmodule RingLoggerTest do
       # config to allow other tests to run without loading a log file
       old_env = Application.get_env(:logger, RingLogger)
       Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
       Application.put_env(:logger, RingLogger, old_env)
 
       :ok = RingLogger.attach(io: io)
@@ -857,7 +857,7 @@ defmodule RingLoggerTest do
     end
 
     test "loading the log", %{io: io} do
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
 
       logs = [
         %{
@@ -882,10 +882,10 @@ defmodule RingLoggerTest do
       # config to allow other tests to run without loading a log file
       old_env = Application.get_env(:logger, RingLogger)
       Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
       Application.put_env(:logger, RingLogger, old_env)
 
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
 
       :ok = RingLogger.attach(io: io)
 
@@ -897,7 +897,7 @@ defmodule RingLoggerTest do
     end
 
     test "loading the log with multiple buffers", %{io: io} do
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
 
       logs = [
         %{
@@ -936,10 +936,10 @@ defmodule RingLoggerTest do
       ]
 
       Application.put_env(:logger, RingLogger, new_env)
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
       Application.put_env(:logger, RingLogger, old_env)
 
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
 
       :ok = RingLogger.attach(io: io)
 
@@ -951,7 +951,7 @@ defmodule RingLoggerTest do
     end
 
     test "loading a corrupted file", %{io: io} do
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
 
       File.write!("test/persistence.log", "this is corrupt")
 
@@ -959,7 +959,7 @@ defmodule RingLoggerTest do
       # config to allow other tests to run without loading a log file
       old_env = Application.get_env(:logger, RingLogger)
       Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
       Application.put_env(:logger, RingLogger, old_env)
 
       :ok = RingLogger.attach(io: io)
@@ -972,7 +972,7 @@ defmodule RingLoggerTest do
     end
 
     test "loading the log resets indexes", %{io: io} do
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
 
       logs = [
         %{
@@ -997,10 +997,10 @@ defmodule RingLoggerTest do
       # config to allow other tests to run without loading a log file
       old_env = Application.get_env(:logger, RingLogger)
       Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
       Application.put_env(:logger, RingLogger, old_env)
 
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
 
       :ok = RingLogger.attach(io: io)
 
@@ -1016,7 +1016,7 @@ defmodule RingLoggerTest do
     end
 
     test "persists on terminate", %{io: io} do
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
 
       _ = File.rm("test/persistence.log")
 
@@ -1024,17 +1024,17 @@ defmodule RingLoggerTest do
       # config to allow other tests to run without loading a log file
       old_env = Application.get_env(:logger, RingLogger)
       Application.put_env(:logger, RingLogger, persist_path: "test/persistence.log")
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
       Application.put_env(:logger, RingLogger, old_env)
 
-      Logger.add_backend(RingLogger)
+      LoggerBackends.add(RingLogger)
 
       :ok = RingLogger.attach(io: io)
 
       Logger.info("Hello")
 
       # Logs should save since we're terminating the backend
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
 
       assert File.exists?("test/persistence.log")
 

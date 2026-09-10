@@ -134,7 +134,7 @@ defmodule RingLogger.Autoclient do
 
       or start it manually:
 
-        iex> Logger.add_backend(RingLogger)
+        iex> LoggerBackends.add(RingLogger)
       """)
 
       try_adding_backend()
@@ -143,8 +143,16 @@ defmodule RingLogger.Autoclient do
     end
   end
 
+  if Code.ensure_loaded?(LoggerBackends) do
+    @add_backend {Logger, :add_backend}
+  else
+    @add_backend {LoggerBackends, :add}
+  end
+
   defp try_adding_backend() do
-    case Logger.add_backend(RingLogger) do
+    {m, f} = @add_backend
+
+    case apply(m, f, [RingLogger]) do
       {:ok, _} ->
         :ok
 

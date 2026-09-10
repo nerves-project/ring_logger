@@ -8,8 +8,6 @@ defmodule RingLogger.ViewerTest do
 
   alias RingLogger.Viewer
 
-  require Logger
-
   @default_pattern "\n$time $metadata[$level] $message\n"
 
   @init_state %{
@@ -29,13 +27,13 @@ defmodule RingLogger.ViewerTest do
   }
 
   setup do
-    Logger.remove_backend(:console)
+    LoggerBackends.remove(:console)
 
     Logger.flush()
 
-    Logger.add_backend(RingLogger)
+    LoggerBackends.add(RingLogger)
 
-    Logger.configure_backend(RingLogger,
+    LoggerBackends.configure(RingLogger,
       max_size: 10,
       format: @default_pattern,
       metadata: [],
@@ -46,7 +44,7 @@ defmodule RingLogger.ViewerTest do
 
     on_exit(fn ->
       File.rm("/temp/file.log")
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
     end)
 
     {:ok, %{state: nil}}

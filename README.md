@@ -74,8 +74,8 @@ config :logger, RingLogger,
 Or you can start the backend manually by running the following:
 
 ```elixir
-Logger.add_backend(RingLogger)
-Logger.configure_backend(RingLogger, max_size: 1024)
+LoggerBackends.add(RingLogger)
+LoggerBackends.configure(RingLogger, max_size: 1024)
 ```
 
 ## IEx session usage
@@ -88,7 +88,7 @@ printed to the console by default. They'll be coming from the console logger, so
 turn them off:
 
 ```elixir
-iex> Logger.remove_backend(:console)
+iex> LoggerBackends.remove(:console)
 :ok
 ```
 
@@ -100,7 +100,7 @@ etc.
 Here's an example:
 
 ```elixir
-iex> Logger.add_backend(RingLogger)
+iex> LoggerBackends.add(RingLogger)
 {:ok, #PID<0.199.0>}
 iex> RingLogger.attach
 :ok

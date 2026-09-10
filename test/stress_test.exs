@@ -10,15 +10,15 @@ defmodule StressTest do
 
   setup do
     {:ok, pid} = RingLogger.TestIO.start(self())
-    Logger.remove_backend(:console)
+    LoggerBackends.remove(:console)
 
     # Flush any latent messages in the Logger to avoid them polluting
     # our tests
     Logger.flush()
 
-    Logger.add_backend(RingLogger)
+    LoggerBackends.add(RingLogger)
 
-    Logger.configure_backend(RingLogger,
+    LoggerBackends.configure(RingLogger,
       max_size: @ring_size,
       format: @default_pattern,
       buffers: []
@@ -26,7 +26,7 @@ defmodule StressTest do
 
     on_exit(fn ->
       RingLogger.TestIO.stop(pid)
-      Logger.remove_backend(RingLogger)
+      LoggerBackends.remove(RingLogger)
     end)
 
     {:ok, [io: pid]}

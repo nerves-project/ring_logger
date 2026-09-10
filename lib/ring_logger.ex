@@ -42,8 +42,8 @@ defmodule RingLogger do
   Or add manually:
 
   ```elixir
-  Logger.add_backend(RingLogger)
-  Logger.configure_backend(RingLogger, max_size: 1024)
+  LoggerBackends.add(RingLogger)
+  LoggerBackends.configure(RingLogger, max_size: 1024)
   ```
 
   Once added as a backend, you have two options depending on whether you're
