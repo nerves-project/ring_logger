@@ -2,6 +2,31 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.11.7
+
+This release (finally!) updates RingLogger to support LoggerBackends. If you'd
+like to remove the console warnings on every start, add `:logger_backends` to
+your mix dependences. Then move the RingLogger config.
+
+One way is to update your `config.exs` to turn off console logging until
+runtime:
+
+```elixir
+config :logger, :default_handler, false
+```
+
+Then add this to the `config/runtime.exs`:
+
+```elixir
+Application.ensure_all_started(:logger_backends)
+LoggerBackends.add(RingLogger)
+```
+
+* Changes
+  * Remove support for Elixir 1.14 and below.
+  * Fix Elixir 1.15 Logger :warn deprecation warnings (Thanks @taun-fellowes)
+  * Restore erlang log levels from :erl_level metadata (Thanks @taun-fellows)
+
 ## v0.11.6
 
 * Changes
