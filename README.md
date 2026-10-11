@@ -1,7 +1,9 @@
 # ring_logger
 
-[![CircleCI](https://circleci.com/gh/nerves-project/ring_logger.svg?style=svg)](https://circleci.com/gh/nerves-project/ring_logger)
 [![Hex version](https://img.shields.io/hexpm/v/ring_logger.svg "Hex version")](https://hex.pm/packages/ring_logger)
+[![API docs](https://img.shields.io/hexpm/v/ring_logger.svg?label=hexdocs "API docs")](https://ring-logger.hexdocs.pm/RingLogger.html)
+[![Nerves compatibility](https://compatibility.nerves-project.org/badge/ring_logger.svg)](https://compatibility.nerves-project.org/packages/ring_logger)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nerves-project/ring_logger/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/nerves-project/ring_logger/tree/main)
 
 This is an in-memory ring buffer backend for the [Elixir
 Logger](https://logger.hexdocs.pm/Logger.html) with convenience methods for
