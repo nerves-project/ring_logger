@@ -46,6 +46,7 @@ defmodule RingLogger.MixProject do
     [
       {:circular_buffer, "~> 1.0 or ~> 0.4.0"},
       {:logger_backends, "~> 1.0", optional: true},
+      {:igniter, "~> 0.6", optional: true, runtime: false},
       {:benchee, "~> 1.1", only: :dev},
       {:ex_doc, "~> 0.18", only: :docs, runtime: false},
       {:dialyxir, "~> 1.2", only: :dev, runtime: false},
@@ -66,6 +67,7 @@ defmodule RingLogger.MixProject do
 
   defp dialyzer() do
     [
+      plt_add_apps: [:igniter, :sourceror, :rewrite, :mix],
       flags: [:missing_return, :extra_return, :unmatched_returns, :error_handling, :underspecs]
     ]
   end
