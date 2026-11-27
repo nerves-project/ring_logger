@@ -21,6 +21,31 @@ and are receiving messages as they're sent, they won't stomp what you're typing.
 
 ## Configuration
 
+### Igniter
+
+If your project uses [Igniter](https://hexdocs.pm/igniter), install and
+configure `ring_logger` by running:
+
+```sh
+mix igniter.install ring_logger
+```
+
+This sets the project up the same way that `mix nerves.new` does. It adds
+`ring_logger` and `logger_backends` to your dependencies and adds `RingLogger`
+as a logger backend in `config/runtime.exs`:
+
+```elixir
+Application.ensure_all_started(:logger_backends)
+LoggerBackends.add(RingLogger)
+```
+
+In Nerves projects, it also turns off Elixir's default console log handler on
+the device by adding `config :logger, :default_handler, false` to
+`config/target.exs`. Log messages still go to the console when you run the
+project on your computer. Existing logger configuration is kept.
+
+### Manual
+
 Add `ring_logger` to your projects dependencies in your `mix.exs`:
 
 ```elixir
